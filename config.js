@@ -5,8 +5,8 @@
 const SUPABASE_URL = 'https://enpxeqlhkdjllukybsme.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucHhlcWxoa2RqbGx1a3lic21lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzczMTAsImV4cCI6MjA4OTQ1MzMxMH0.kv6U6Se_VK2pyBNHCBDwoERJOu9EWDMXXYp-AnVCQlw';
 
-// Inicializar Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Inicializar Supabase (usando nome diferente para evitar conflito com window.supabase do CDN)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================================
 // Utilitários
@@ -76,7 +76,7 @@ const Utils = {
 
   // Verificar autenticação e redirecionar
   async checkAuth(redirectTo = 'index.html') {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) {
       window.location.href = redirectTo;
       return null;
@@ -86,13 +86,13 @@ const Utils = {
 
   // Obter sessão atual
   async getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     return session;
   },
 
   // Logout
   async logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = 'index.html';
   },
 
