@@ -137,7 +137,7 @@
       const status = document.getElementById('filter-status').value;
       const period = document.getElementById('filter-period').value;
 
-      let query = supabase
+      let query = supabaseClient
         .from('searches')
         .select('*', { count: 'exact' })
         .eq('user_id', currentUser.id)
@@ -225,7 +225,7 @@
       if (!session) return;
       currentUser = session.user;
 
-      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const { data: profile } = await supabaseClient.from('users').select('*').eq('id', currentUser.id).single();
       const userName = profile?.full_name || currentUser.email.split('@')[0];
       document.getElementById('sidebar-name').textContent = userName;
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();

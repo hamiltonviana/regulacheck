@@ -224,7 +224,7 @@
       else if (hour >= 12 && hour < 18) greet = 'Boa tarde';
 
       // Buscar perfil do usuário
-      const { data: profile } = await supabase
+      const { data: profile } = await supabaseClient
         .from('users')
         .select('*')
         .eq('id', currentUser.id)
@@ -236,7 +236,7 @@
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
 
       // Buscar dados do dashboard via RPC
-      const { data: stats, error } = await supabase.rpc('get_dashboard_stats', { p_user_id: currentUser.id });
+      const { data: stats, error } = await supabaseClient.rpc('get_dashboard_stats', { p_user_id: currentUser.id });
 
       if (error) {
         console.error('Erro ao carregar dashboard:', error);
@@ -250,7 +250,7 @@
 
     async function loadDashboardFallback() {
       // Buscar assinatura
-      const { data: sub } = await supabase
+      const { data: sub } = await supabaseClient
         .from('subscriptions')
         .select('*, plans(*)')
         .eq('user_id', currentUser.id)
@@ -260,18 +260,18 @@
         .single();
 
       // Buscar contagens
-      const { count: totalSearches } = await supabase
+      const { count: totalSearches } = await supabaseClient
         .from('searches')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', currentUser.id);
 
-      const { count: totalResults } = await supabase
+      const { count: totalResults } = await supabaseClient
         .from('results')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', currentUser.id);
 
       // Buscas recentes
-      const { data: recentSearches } = await supabase
+      const { data: recentSearches } = await supabaseClient
         .from('searches')
         .select('*')
         .eq('user_id', currentUser.id)

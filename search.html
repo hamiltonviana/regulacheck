@@ -258,13 +258,13 @@
       currentUser = session.user;
 
       // Sidebar info
-      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const { data: profile } = await supabaseClient.from('users').select('*').eq('id', currentUser.id).single();
       const userName = profile?.full_name || currentUser.email.split('@')[0];
       document.getElementById('sidebar-name').textContent = userName;
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
 
       // Verificar quota
-      const { data: limitInfo } = await supabase.rpc('check_search_limit', { p_user_id: currentUser.id });
+      const { data: limitInfo } = await supabaseClient.rpc('check_search_limit', { p_user_id: currentUser.id });
 
       if (limitInfo) {
         const remaining = limitInfo.remaining || 0;
@@ -278,7 +278,7 @@
         }
       } else {
         // Fallback
-        const { data: sub } = await supabase
+        const { data: sub } = await supabaseClient
           .from('subscriptions')
           .select('*, plans(*)')
           .eq('user_id', currentUser.id)
@@ -332,7 +332,7 @@
 
       try {
         // Incrementar contador de buscas
-        const { data: incResult } = await supabase.rpc('increment_search_count', { p_user_id: currentUser.id });
+        const { data: incResult } = await supabaseClient.rpc('increment_search_count', { p_user_id: currentUser.id });
 
         if (incResult && !incResult.success) {
           Utils.showToast(incResult.error || 'Limite de buscas atingido.', 'error');
@@ -344,7 +344,7 @@
         const isExtra = incResult?.is_extra_search || false;
 
         // Criar registro da busca
-        const { data: search, error } = await supabase
+        const { data: search, error } = await supabaseClient
           .from('searches')
           .insert({
             user_id: currentUser.id,
@@ -361,7 +361,7 @@
         if (error) throw error;
 
         // Registrar no audit log
-        await supabase.from('audit_logs').insert({
+        await supabaseClient.from('audit_logs').insert({
           user_id: currentUser.id,
           action: 'search_created',
           entity_type: 'search',
@@ -374,7 +374,7 @@
         // Simular processamento (em produção, o n8n faria isso)
         setTimeout(async () => {
           // Atualizar status para completed (simulação)
-          await supabase
+          await supabaseClient
             .from('searches')
             .update({ status: 'completed' })
             .eq('id', search.id);

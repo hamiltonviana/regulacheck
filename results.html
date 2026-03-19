@@ -195,7 +195,7 @@
 
     async function toggleBookmark(resultId, btn) {
       const isBookmarked = btn.classList.contains('text-yellow-500');
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('results')
         .update({ is_bookmarked: !isBookmarked })
         .eq('id', resultId);
@@ -219,7 +219,7 @@
       currentUser = session.user;
 
       // Sidebar
-      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const { data: profile } = await supabaseClient.from('users').select('*').eq('id', currentUser.id).single();
       const userName = profile?.full_name || currentUser.email.split('@')[0];
       document.getElementById('sidebar-name').textContent = userName;
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
@@ -235,7 +235,7 @@
       }
 
       // Buscar dados da busca
-      const { data: search, error: searchError } = await supabase
+      const { data: search, error: searchError } = await supabaseClient
         .from('searches')
         .select('*')
         .eq('id', searchId)
@@ -255,7 +255,7 @@
       document.getElementById('search-sources').innerHTML = (search.sources || []).map(s => Utils.sourceBadge(s)).join(' ');
 
       // Buscar resultados
-      const { data: results, error: resultsError } = await supabase
+      const { data: results, error: resultsError } = await supabaseClient
         .from('results')
         .select('*')
         .eq('search_id', searchId)
