@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegulaCHECK - Resultados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .sidebar-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="p-6">
+      <a href="dashboard.html" class="flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">RegulaCHECK</h1>
+          <p class="text-xs text-gray-400">Monitoramento regulatório</p>
+        </div>
+      </a>
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="search.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Nova Busca
+        </a>
+        <a href="history.html" class="sidebar-link active flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Histórico
+        </a>
+        <a href="plans.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Planos
+        </a>
+      </nav>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3">
+        <div id="sidebar-avatar" class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm"></div>
+        <div class="flex-1 min-w-0">
+          <p id="sidebar-name" class="text-sm font-medium text-gray-900 truncate"></p>
+          <p id="sidebar-plan" class="text-xs text-gray-400 truncate"></p>
+        </div>
+        <button onclick="Utils.logout()" title="Sair" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo principal -->
+  <main class="lg:ml-64 min-h-screen">
+    <header class="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 class="font-bold text-gray-900">Resultados</h1>
+      <div class="w-10"></div>
+    </header>
+
+    <div class="p-6 lg:p-8 max-w-5xl mx-auto">
+      <!-- Breadcrumb -->
+      <nav class="mb-6 flex items-center gap-2 text-sm text-gray-400">
+        <a href="history.html" class="hover:text-blue-600 transition-colors">Histórico</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-gray-700 font-medium">Resultados da Busca</span>
+      </nav>
+
+      <!-- Info da busca -->
+      <div id="search-info" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+        <div class="flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2" id="search-keywords">Carregando...</h2>
+            <div class="flex items-center gap-4 text-sm text-gray-500">
+              <span id="search-dates"></span>
+              <span id="search-status"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2" id="search-sources"></div>
+        </div>
+      </div>
+
+      <!-- Filtro por fonte -->
+      <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        <button onclick="filterResults('all')" class="filter-btn active px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white transition-all" data-filter="all">
+          Todas
+        </button>
+        <button onclick="filterResults('anvisa')" class="filter-btn px-4 py-2 text-sm font-medium rounded-lg bg-white text-gray-600 border border-gray-200 hover:border-blue-300 transition-all" data-filter="anvisa">
+          Anvisa
+        </button>
+        <button onclick="filterResults('abnt')" class="filter-btn px-4 py-2 text-sm font-medium rounded-lg bg-white text-gray-600 border border-gray-200 hover:border-blue-300 transition-all" data-filter="abnt">
+          ABNT
+        </button>
+        <button onclick="filterResults('iso')" class="filter-btn px-4 py-2 text-sm font-medium rounded-lg bg-white text-gray-600 border border-gray-200 hover:border-blue-300 transition-all" data-filter="iso">
+          ISO
+        </button>
+        <button onclick="filterResults('dou')" class="filter-btn px-4 py-2 text-sm font-medium rounded-lg bg-white text-gray-600 border border-gray-200 hover:border-blue-300 transition-all" data-filter="dou">
+          DOU
+        </button>
+      </div>
+
+      <!-- Lista de resultados -->
+      <div id="results-list" class="space-y-4">
+        <div class="text-center py-12 text-gray-400">
+          <svg class="w-12 h-12 mx-auto mb-3 text-gray-200 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <p class="text-sm">Carregando resultados...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+    let allResults = [];
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    function filterResults(source) {
+      // Atualizar botões
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === source) {
+          btn.className = 'filter-btn active px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white transition-all';
+        } else {
+          btn.className = 'filter-btn px-4 py-2 text-sm font-medium rounded-lg bg-white text-gray-600 border border-gray-200 hover:border-blue-300 transition-all';
+        }
+      });
+
+      const filtered = source === 'all' ? allResults : allResults.filter(r => r.source === source);
+      renderResults(filtered);
+    }
+
+    function renderResults(results) {
+      const container = document.getElementById('results-list');
+
+      if (results.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-lg font-medium text-gray-500 mb-1">Nenhum resultado encontrado</p>
+            <p class="text-sm">Esta busca ainda não retornou resultados. Os resultados serão preenchidos pelo sistema automatizado (n8n).</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = results.map(r => `
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-5">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1.5">
+                ${Utils.sourceBadge(r.source)}
+                ${r.document_type ? `<span class="text-xs text-gray-400">${r.document_type}</span>` : ''}
+              </div>
+              <h3 class="text-base font-semibold text-gray-900 leading-snug">${r.title}</h3>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button onclick="toggleBookmark('${r.id}', this)" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors ${r.is_bookmarked ? 'text-yellow-500' : 'text-gray-300'}">
+                <svg class="w-5 h-5" fill="${r.is_bookmarked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+              </button>
+            </div>
+          </div>
+          ${r.summary ? `<p class="text-sm text-gray-600 mb-3 line-clamp-2">${r.summary}</p>` : ''}
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-4 text-xs text-gray-400">
+              ${r.document_number ? `<span>N.o ${r.document_number}</span>` : ''}
+              ${r.publication_date ? `<span>Publicado em ${Utils.formatDate(r.publication_date)}</span>` : ''}
+              ${r.matched_keywords?.length ? `<span>Palavras: ${r.matched_keywords.join(', ')}</span>` : ''}
+            </div>
+            ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+              Ver documento
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function toggleBookmark(resultId, btn) {
+      const isBookmarked = btn.classList.contains('text-yellow-500');
+      const { error } = await supabase
+        .from('results')
+        .update({ is_bookmarked: !isBookmarked })
+        .eq('id', resultId);
+
+      if (!error) {
+        if (isBookmarked) {
+          btn.classList.remove('text-yellow-500');
+          btn.classList.add('text-gray-300');
+          btn.querySelector('svg').setAttribute('fill', 'none');
+        } else {
+          btn.classList.add('text-yellow-500');
+          btn.classList.remove('text-gray-300');
+          btn.querySelector('svg').setAttribute('fill', 'currentColor');
+        }
+      }
+    }
+
+    async function loadPage() {
+      const session = await Utils.checkAuth();
+      if (!session) return;
+      currentUser = session.user;
+
+      // Sidebar
+      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const userName = profile?.full_name || currentUser.email.split('@')[0];
+      document.getElementById('sidebar-name').textContent = userName;
+      document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
+      document.getElementById('sidebar-plan').textContent = '';
+
+      // Obter search_id da URL
+      const params = new URLSearchParams(window.location.search);
+      const searchId = params.get('search_id');
+
+      if (!searchId) {
+        window.location.href = 'history.html';
+        return;
+      }
+
+      // Buscar dados da busca
+      const { data: search, error: searchError } = await supabase
+        .from('searches')
+        .select('*')
+        .eq('id', searchId)
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (searchError || !search) {
+        Utils.showToast('Busca não encontrada.', 'error');
+        setTimeout(() => window.location.href = 'history.html', 1500);
+        return;
+      }
+
+      // Renderizar info da busca
+      document.getElementById('search-keywords').textContent = (search.keywords || []).join(', ');
+      document.getElementById('search-dates').textContent = `${Utils.formatDate(search.date_start)} — ${Utils.formatDate(search.date_end)}`;
+      document.getElementById('search-status').innerHTML = Utils.statusBadge(search.status);
+      document.getElementById('search-sources').innerHTML = (search.sources || []).map(s => Utils.sourceBadge(s)).join(' ');
+
+      // Buscar resultados
+      const { data: results, error: resultsError } = await supabase
+        .from('results')
+        .select('*')
+        .eq('search_id', searchId)
+        .order('publication_date', { ascending: false });
+
+      allResults = results || [];
+      renderResults(allResults);
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>

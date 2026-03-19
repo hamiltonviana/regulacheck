@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegulaCHECK - Nova Busca</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .sidebar-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .keyword-tag {
+      animation: fadeIn 0.2s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Sidebar Mobile Overlay -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="p-6">
+      <a href="dashboard.html" class="flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">RegulaCHECK</h1>
+          <p class="text-xs text-gray-400">Monitoramento regulatório</p>
+        </div>
+      </a>
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="search.html" class="sidebar-link active flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Nova Busca
+        </a>
+        <a href="history.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Histórico
+        </a>
+        <a href="plans.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Planos
+        </a>
+      </nav>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3">
+        <div id="sidebar-avatar" class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm"></div>
+        <div class="flex-1 min-w-0">
+          <p id="sidebar-name" class="text-sm font-medium text-gray-900 truncate"></p>
+          <p id="sidebar-plan" class="text-xs text-gray-400 truncate"></p>
+        </div>
+        <button onclick="Utils.logout()" title="Sair" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo principal -->
+  <main class="lg:ml-64 min-h-screen">
+    <header class="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 class="font-bold text-gray-900">Nova Busca</h1>
+      <div class="w-10"></div>
+    </header>
+
+    <div class="p-6 lg:p-8 max-w-4xl mx-auto">
+      <!-- Título -->
+      <div class="mb-8">
+        <h2 class="text-2xl lg:text-3xl font-bold text-gray-900">Nova Busca</h2>
+        <p class="text-gray-500 mt-1">Pesquise atualizações em regulamentações brasileiras.</p>
+      </div>
+
+      <!-- Info de buscas restantes -->
+      <div id="search-quota" class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="text-sm text-blue-700">Você tem <strong id="quota-remaining">—</strong> buscas restantes neste período.</span>
+        </div>
+        <a href="plans.html" class="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap">Upgrade &rarr;</a>
+      </div>
+
+      <!-- Alerta sem buscas -->
+      <div id="no-quota-alert" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-red-700">Limite de buscas atingido</p>
+            <p class="text-xs text-red-600 mt-0.5">Faça upgrade do seu plano ou compre buscas extras para continuar.</p>
+          </div>
+        </div>
+        <a href="plans.html" class="mt-3 inline-block px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Ver planos</a>
+      </div>
+
+      <!-- Formulário de busca -->
+      <form id="search-form" onsubmit="handleSearch(event)" class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div class="p-6 lg:p-8 space-y-6">
+          <!-- Palavras-chave -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">
+              Palavras-chave
+              <span class="text-gray-400 font-normal">(até 5, pressione Enter para adicionar)</span>
+            </label>
+            <div id="keywords-container" class="flex flex-wrap gap-2 p-3 border border-gray-200 rounded-xl min-h-[52px] focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-300 transition-all">
+              <input type="text" id="keyword-input"
+                class="flex-1 min-w-[150px] outline-none text-sm placeholder-gray-400"
+                placeholder="Digite uma palavra-chave e pressione Enter..."
+                onkeydown="handleKeywordInput(event)">
+            </div>
+            <p class="text-xs text-gray-400 mt-1.5" id="keyword-count">0 de 5 palavras-chave</p>
+          </div>
+
+          <!-- Período -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-900 mb-2">Data Inicial</label>
+              <input type="date" id="date-start" required
+                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-900 mb-2">Data Final</label>
+              <input type="date" id="date-end" required
+                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all">
+            </div>
+          </div>
+
+          <!-- Fontes -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-3">Fontes de Pesquisa</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <label class="relative flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                <input type="checkbox" name="sources" value="anvisa" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                <div>
+                  <span class="text-sm font-medium text-gray-900">Anvisa</span>
+                  <p class="text-xs text-gray-400">Ag. Sanitária</p>
+                </div>
+              </label>
+              <label class="relative flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                <input type="checkbox" name="sources" value="abnt" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                <div>
+                  <span class="text-sm font-medium text-gray-900">ABNT</span>
+                  <p class="text-xs text-gray-400">Normas técnicas</p>
+                </div>
+              </label>
+              <label class="relative flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                <input type="checkbox" name="sources" value="iso" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                <div>
+                  <span class="text-sm font-medium text-gray-900">ISO</span>
+                  <p class="text-xs text-gray-400">Padrões internac.</p>
+                </div>
+              </label>
+              <label class="relative flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                <input type="checkbox" name="sources" value="dou" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                <div>
+                  <span class="text-sm font-medium text-gray-900">DOU</span>
+                  <p class="text-xs text-gray-400">Diário Oficial</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botão de submit -->
+        <div class="px-6 lg:px-8 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-100 flex items-center justify-between">
+          <p class="text-xs text-gray-400">A busca será processada pelo nosso sistema automatizado.</p>
+          <button type="submit" id="btn-search"
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            Buscar
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+    let keywords = [];
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    // Gerenciar palavras-chave
+    function handleKeywordInput(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = document.getElementById('keyword-input');
+        const value = input.value.trim();
+        if (!value) return;
+        if (keywords.length >= 5) {
+          Utils.showToast('Máximo de 5 palavras-chave atingido.', 'warning');
+          return;
+        }
+        if (keywords.includes(value)) {
+          Utils.showToast('Palavra-chave já adicionada.', 'warning');
+          return;
+        }
+        keywords.push(value);
+        input.value = '';
+        renderKeywords();
+      }
+    }
+
+    function removeKeyword(index) {
+      keywords.splice(index, 1);
+      renderKeywords();
+    }
+
+    function renderKeywords() {
+      const container = document.getElementById('keywords-container');
+      const input = document.getElementById('keyword-input');
+      // Remover tags existentes
+      container.querySelectorAll('.keyword-tag').forEach(el => el.remove());
+      // Adicionar tags
+      keywords.forEach((kw, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'keyword-tag inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium';
+        tag.innerHTML = `${kw}<button type="button" onclick="removeKeyword(${i})" class="text-blue-400 hover:text-blue-600 ml-0.5">&times;</button>`;
+        container.insertBefore(tag, input);
+      });
+      document.getElementById('keyword-count').textContent = `${keywords.length} de 5 palavras-chave`;
+      if (keywords.length >= 5) input.style.display = 'none';
+      else input.style.display = '';
+    }
+
+    // Definir datas padrão
+    function setDefaultDates() {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      document.getElementById('date-end').value = today.toISOString().split('T')[0];
+      document.getElementById('date-start').value = thirtyDaysAgo.toISOString().split('T')[0];
+    }
+
+    async function loadPage() {
+      const session = await Utils.checkAuth();
+      if (!session) return;
+      currentUser = session.user;
+
+      // Sidebar info
+      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const userName = profile?.full_name || currentUser.email.split('@')[0];
+      document.getElementById('sidebar-name').textContent = userName;
+      document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
+
+      // Verificar quota
+      const { data: limitInfo } = await supabase.rpc('check_search_limit', { p_user_id: currentUser.id });
+
+      if (limitInfo) {
+        const remaining = limitInfo.remaining || 0;
+        document.getElementById('quota-remaining').textContent = remaining;
+        document.getElementById('sidebar-plan').textContent = `Plano ${limitInfo.plan || 'Free'}`;
+
+        if (remaining <= 0) {
+          document.getElementById('search-quota').classList.add('hidden');
+          document.getElementById('no-quota-alert').classList.remove('hidden');
+          document.getElementById('btn-search').disabled = true;
+        }
+      } else {
+        // Fallback
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('*, plans(*)')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (sub) {
+          const remaining = (sub.plans?.monthly_searches || 3) + (sub.extra_searches_purchased || 0) - (sub.searches_used || 0);
+          document.getElementById('quota-remaining').textContent = Math.max(0, remaining);
+          document.getElementById('sidebar-plan').textContent = `Plano ${sub.plans?.display_name || 'Free'}`;
+
+          if (remaining <= 0) {
+            document.getElementById('search-quota').classList.add('hidden');
+            document.getElementById('no-quota-alert').classList.remove('hidden');
+            document.getElementById('btn-search').disabled = true;
+          }
+        }
+      }
+
+      setDefaultDates();
+    }
+
+    async function handleSearch(e) {
+      e.preventDefault();
+
+      if (keywords.length === 0) {
+        Utils.showToast('Adicione pelo menos uma palavra-chave.', 'warning');
+        return;
+      }
+
+      const dateStart = document.getElementById('date-start').value;
+      const dateEnd = document.getElementById('date-end').value;
+      const sourceCheckboxes = document.querySelectorAll('input[name="sources"]:checked');
+      const sources = Array.from(sourceCheckboxes).map(cb => cb.value);
+
+      if (sources.length === 0) {
+        Utils.showToast('Selecione pelo menos uma fonte de pesquisa.', 'warning');
+        return;
+      }
+
+      if (new Date(dateEnd) < new Date(dateStart)) {
+        Utils.showToast('A data final deve ser posterior à data inicial.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-search');
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Processando...';
+
+      try {
+        // Incrementar contador de buscas
+        const { data: incResult } = await supabase.rpc('increment_search_count', { p_user_id: currentUser.id });
+
+        if (incResult && !incResult.success) {
+          Utils.showToast(incResult.error || 'Limite de buscas atingido.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Buscar';
+          return;
+        }
+
+        const isExtra = incResult?.is_extra_search || false;
+
+        // Criar registro da busca
+        const { data: search, error } = await supabase
+          .from('searches')
+          .insert({
+            user_id: currentUser.id,
+            keywords: keywords,
+            date_start: dateStart,
+            date_end: dateEnd,
+            sources: sources,
+            status: 'pending',
+            is_extra_search: isExtra
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Registrar no audit log
+        await supabase.from('audit_logs').insert({
+          user_id: currentUser.id,
+          action: 'search_created',
+          entity_type: 'search',
+          entity_id: search.id,
+          details: { keywords, date_start: dateStart, date_end: dateEnd, sources, is_extra: isExtra }
+        });
+
+        Utils.showToast('Busca criada com sucesso! Redirecionando...', 'success');
+
+        // Simular processamento (em produção, o n8n faria isso)
+        setTimeout(async () => {
+          // Atualizar status para completed (simulação)
+          await supabase
+            .from('searches')
+            .update({ status: 'completed' })
+            .eq('id', search.id);
+
+          window.location.href = `results.html?search_id=${search.id}`;
+        }, 1500);
+
+      } catch (err) {
+        console.error('Erro ao criar busca:', err);
+        Utils.showToast('Erro ao criar busca. Tente novamente.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Buscar';
+      }
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegulaCHECK - Planos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .sidebar-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .plan-card.recommended { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="p-6">
+      <a href="dashboard.html" class="flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">RegulaCHECK</h1>
+          <p class="text-xs text-gray-400">Monitoramento regulatório</p>
+        </div>
+      </a>
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="search.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Nova Busca
+        </a>
+        <a href="history.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Histórico
+        </a>
+        <a href="plans.html" class="sidebar-link active flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Planos
+        </a>
+      </nav>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3">
+        <div id="sidebar-avatar" class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm"></div>
+        <div class="flex-1 min-w-0">
+          <p id="sidebar-name" class="text-sm font-medium text-gray-900 truncate"></p>
+          <p id="sidebar-plan" class="text-xs text-gray-400 truncate"></p>
+        </div>
+        <button onclick="Utils.logout()" title="Sair" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo principal -->
+  <main class="lg:ml-64 min-h-screen">
+    <header class="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 class="font-bold text-gray-900">Planos</h1>
+      <div class="w-10"></div>
+    </header>
+
+    <div class="p-6 lg:p-8 max-w-5xl mx-auto">
+      <!-- Título -->
+      <div class="text-center mb-10">
+        <h2 class="text-2xl lg:text-3xl font-bold text-gray-900">Escolha o plano ideal</h2>
+        <p class="text-gray-500 mt-2 max-w-lg mx-auto">Todos os planos incluem acesso às fontes Anvisa, ABNT, ISO e DOU. Faça upgrade a qualquer momento.</p>
+      </div>
+
+      <!-- Cards de planos -->
+      <div id="plans-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <!-- Preenchido via JS -->
+      </div>
+
+      <!-- Seção de buscas extras -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Precisa de mais buscas?</h3>
+        <p class="text-gray-500 text-sm mb-6 max-w-md mx-auto">Compre pacotes de buscas extras sem precisar mudar de plano. As buscas extras são válidas até o final do período atual.</p>
+        <div class="flex items-center justify-center gap-4 flex-wrap">
+          <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-5 py-3">
+            <label class="text-sm text-gray-600">Quantidade:</label>
+            <select id="extra-qty" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+              <option value="5">5 buscas</option>
+              <option value="10">10 buscas</option>
+              <option value="20">20 buscas</option>
+              <option value="50">50 buscas</option>
+            </select>
+          </div>
+          <div class="text-sm text-gray-500">
+            Valor: <strong id="extra-price" class="text-gray-900">—</strong>
+          </div>
+          <button onclick="purchaseExtra()" id="btn-purchase-extra"
+            class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20">
+            Comprar
+          </button>
+        </div>
+      </div>
+
+      <!-- Comparação de features -->
+      <div class="mt-12 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+          <h3 class="text-lg font-bold text-gray-900">Comparação detalhada</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left p-4 font-medium text-gray-500">Recurso</th>
+                <th class="text-center p-4 font-medium text-gray-500">Free</th>
+                <th class="text-center p-4 font-medium text-blue-600">Starter</th>
+                <th class="text-center p-4 font-medium text-gray-500">Professional</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr>
+                <td class="p-4 text-gray-700">Buscas por mês</td>
+                <td class="p-4 text-center font-medium">3</td>
+                <td class="p-4 text-center font-medium text-blue-600">20</td>
+                <td class="p-4 text-center font-medium">100</td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Palavras-chave por busca</td>
+                <td class="p-4 text-center">5</td>
+                <td class="p-4 text-center">5</td>
+                <td class="p-4 text-center">5</td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Busca extra (unidade)</td>
+                <td class="p-4 text-center">R$ 9,90</td>
+                <td class="p-4 text-center text-blue-600">R$ 7,90</td>
+                <td class="p-4 text-center">R$ 4,90</td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Fontes (Anvisa, ABNT, ISO, DOU)</td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Histórico completo</td>
+                <td class="p-4 text-center text-gray-300">30 dias</td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Exportação de resultados</td>
+                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Alertas por e-mail</td>
+                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
+                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">API de integração</td>
+                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
+                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
+                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Suporte</td>
+                <td class="p-4 text-center text-gray-400 text-xs">Comunidade</td>
+                <td class="p-4 text-center text-blue-600 text-xs">E-mail</td>
+                <td class="p-4 text-center text-xs font-medium">Prioritário</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+    let currentPlan = 'free';
+    let extraSearchPrice = 9.90;
+    let allPlans = [];
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    function updateExtraPrice() {
+      const qty = parseInt(document.getElementById('extra-qty').value);
+      document.getElementById('extra-price').textContent = Utils.formatCurrency(qty * extraSearchPrice);
+    }
+
+    async function purchaseExtra() {
+      const qty = parseInt(document.getElementById('extra-qty').value);
+      const btn = document.getElementById('btn-purchase-extra');
+      btn.disabled = true;
+      btn.textContent = 'Processando...';
+
+      const { data, error } = await supabase.rpc('purchase_extra_searches', {
+        p_user_id: currentUser.id,
+        p_quantity: qty
+      });
+
+      if (error || (data && !data.success)) {
+        Utils.showToast(data?.error || 'Erro ao comprar buscas extras.', 'error');
+      } else {
+        Utils.showToast(`${qty} buscas extras adicionadas com sucesso!`, 'success');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Comprar';
+    }
+
+    async function loadPage() {
+      const session = await Utils.checkAuth();
+      if (!session) return;
+      currentUser = session.user;
+
+      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const userName = profile?.full_name || currentUser.email.split('@')[0];
+      document.getElementById('sidebar-name').textContent = userName;
+      document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
+
+      // Buscar plano atual
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('*, plans(*)')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (sub?.plans) {
+        currentPlan = sub.plans.name;
+        extraSearchPrice = parseFloat(sub.plans.extra_search_price) || 9.90;
+        document.getElementById('sidebar-plan').textContent = `Plano ${sub.plans.display_name}`;
+      }
+
+      // Buscar todos os planos
+      const { data: plans } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price_monthly', { ascending: true });
+
+      allPlans = plans || [];
+      renderPlans();
+      updateExtraPrice();
+
+      // Listener para atualizar preço
+      document.getElementById('extra-qty').addEventListener('change', updateExtraPrice);
+    }
+
+    function renderPlans() {
+      const grid = document.getElementById('plans-grid');
+      const icons = {
+        free: `<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+        starter: `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
+        professional: `<svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>`
+      };
+
+      grid.innerHTML = allPlans.map(plan => {
+        const isRecommended = plan.name === 'starter';
+        const isCurrent = plan.name === currentPlan;
+        const features = plan.features || [];
+
+        return `
+          <div class="plan-card ${isRecommended ? 'recommended' : ''} relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all p-6 flex flex-col">
+            ${isRecommended ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">Recomendado</div>' : ''}
+            <div class="mb-6">
+              <div class="mb-4">${icons[plan.name] || icons.free}</div>
+              <h3 class="text-xl font-bold text-gray-900">${plan.display_name}</h3>
+              <p class="text-sm text-gray-500 mt-1">${plan.description}</p>
+            </div>
+            <div class="mb-6">
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl font-bold text-gray-900">${plan.price_monthly > 0 ? Utils.formatCurrency(plan.price_monthly) : 'Grátis'}</span>
+                ${plan.price_monthly > 0 ? '<span class="text-sm text-gray-400">/mês</span>' : ''}
+              </div>
+              <p class="text-xs text-gray-400 mt-1">${plan.monthly_searches} buscas/mês | Extra: ${Utils.formatCurrency(plan.extra_search_price)}/busca</p>
+            </div>
+            <ul class="space-y-3 mb-8 flex-1">
+              ${features.map(f => `
+                <li class="flex items-start gap-2 text-sm text-gray-600">
+                  <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  ${f}
+                </li>
+              `).join('')}
+            </ul>
+            <button
+              onclick="${isCurrent ? '' : `alert('Integração com gateway de pagamento em breve!')`}"
+              class="w-full py-3 rounded-xl text-sm font-semibold transition-all ${
+                isCurrent
+                  ? 'bg-gray-100 text-gray-400 cursor-default'
+                  : isRecommended
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25'
+                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+              }">
+              ${isCurrent ? 'Plano atual' : plan.price_monthly > 0 ? 'Assinar agora' : 'Começar grátis'}
+            </button>
+          </div>`;
+      }).join('');
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegulaCHECK - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+    }
+    .input-focus:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    .pulse-dot {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .float-animation {
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+
+  <!-- Background decorativo -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl float-animation"></div>
+    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl float-animation" style="animation-delay: 3s;"></div>
+  </div>
+
+  <div class="w-full max-w-md relative z-10">
+    <!-- Logo e título -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-600/30">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">RegulaCHECK</h1>
+      <p class="text-blue-200 text-sm">Monitoramento inteligente de regulamentações brasileiras</p>
+      <div class="flex items-center justify-center gap-3 mt-3">
+        <span class="inline-flex items-center gap-1 text-xs text-blue-300">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full pulse-dot"></span> Anvisa
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs text-blue-300">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full pulse-dot"></span> ABNT
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs text-blue-300">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full pulse-dot"></span> ISO
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs text-blue-300">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full pulse-dot"></span> DOU
+        </span>
+      </div>
+    </div>
+
+    <!-- Card de login/cadastro -->
+    <div class="glass-card rounded-2xl shadow-2xl p-8">
+      <!-- Tabs -->
+      <div class="flex mb-6 bg-gray-100 rounded-xl p-1">
+        <button id="tab-login" onclick="switchTab('login')"
+          class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 bg-white text-gray-900 shadow-sm">
+          Entrar
+        </button>
+        <button id="tab-register" onclick="switchTab('register')"
+          class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700">
+          Criar conta
+        </button>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form id="form-login" onsubmit="handleLogin(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+            <input type="email" id="login-email" required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="seu@email.com">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+            <input type="password" id="login-password" required minlength="6"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="Sua senha">
+          </div>
+        </div>
+        <button type="submit" id="btn-login"
+          class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 flex items-center justify-center gap-2">
+          <span>Entrar</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </form>
+
+      <!-- Formulário de Cadastro -->
+      <form id="form-register" class="hidden" onsubmit="handleRegister(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Nome completo</label>
+            <input type="text" id="register-name" required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="Seu nome completo">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+            <input type="email" id="register-email" required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="seu@email.com">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Empresa (opcional)</label>
+            <input type="text" id="register-company"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="Nome da empresa">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+            <input type="password" id="register-password" required minlength="6"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="Mínimo 6 caracteres">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Confirmar senha</label>
+            <input type="password" id="register-confirm" required minlength="6"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none input-focus transition-all"
+              placeholder="Repita a senha">
+          </div>
+        </div>
+        <button type="submit" id="btn-register"
+          class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 flex items-center justify-center gap-2">
+          <span>Criar conta gratuita</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+        </button>
+      </form>
+
+      <!-- Mensagem de erro -->
+      <div id="auth-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600"></div>
+      <!-- Mensagem de sucesso -->
+      <div id="auth-success" class="hidden mt-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600"></div>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-blue-300/60 text-xs mt-6">
+      RegulaCHECK &copy; 2026 &mdash; Monitoramento de regulamentações
+    </p>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // Verificar se já está logado
+    (async () => {
+      const session = await Utils.getSession();
+      if (session) {
+        window.location.href = 'dashboard.html';
+      }
+    })();
+
+    // Alternar entre tabs
+    function switchTab(tab) {
+      const loginForm = document.getElementById('form-login');
+      const registerForm = document.getElementById('form-register');
+      const tabLogin = document.getElementById('tab-login');
+      const tabRegister = document.getElementById('tab-register');
+      const errorDiv = document.getElementById('auth-error');
+      const successDiv = document.getElementById('auth-success');
+
+      errorDiv.classList.add('hidden');
+      successDiv.classList.add('hidden');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        tabLogin.className = 'flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 bg-white text-gray-900 shadow-sm';
+        tabRegister.className = 'flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700';
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        tabRegister.className = 'flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 bg-white text-gray-900 shadow-sm';
+        tabLogin.className = 'flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700';
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      document.getElementById('auth-success').classList.add('hidden');
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('auth-success');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      document.getElementById('auth-error').classList.add('hidden');
+    }
+
+    // Login
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-login');
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Entrando...';
+
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        showError(error.message === 'Invalid login credentials'
+          ? 'E-mail ou senha incorretos.'
+          : error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<span>Entrar</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+        return;
+      }
+
+      window.location.href = 'dashboard.html';
+    }
+
+    // Cadastro
+    async function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-register');
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Criando conta...';
+
+      const name = document.getElementById('register-name').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const company = document.getElementById('register-company').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirm = document.getElementById('register-confirm').value;
+
+      if (password !== confirm) {
+        showError('As senhas não coincidem.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Criar conta gratuita</span>';
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name, company: company }
+        }
+      });
+
+      if (error) {
+        showError(error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<span>Criar conta gratuita</span>';
+        return;
+      }
+
+      if (data.user && !data.session) {
+        showSuccess('Conta criada! Verifique seu e-mail para confirmar o cadastro.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Criar conta gratuita</span>';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }
+  </script>
+</body>
+</html>

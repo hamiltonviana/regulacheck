@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegulaCHECK - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .sidebar-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .progress-bar { transition: width 0.8s ease-in-out; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Sidebar Mobile Overlay -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="p-6">
+      <!-- Logo -->
+      <a href="dashboard.html" class="flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">RegulaCHECK</h1>
+          <p class="text-xs text-gray-400">Monitoramento regulatório</p>
+        </div>
+      </a>
+
+      <!-- Navegação -->
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="sidebar-link active flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="search.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Nova Busca
+        </a>
+        <a href="history.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Histórico
+        </a>
+        <a href="plans.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Planos
+        </a>
+      </nav>
+    </div>
+
+    <!-- Usuário no sidebar -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3">
+        <div id="sidebar-avatar" class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm"></div>
+        <div class="flex-1 min-w-0">
+          <p id="sidebar-name" class="text-sm font-medium text-gray-900 truncate"></p>
+          <p id="sidebar-plan" class="text-xs text-gray-400 truncate"></p>
+        </div>
+        <button onclick="Utils.logout()" title="Sair" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo principal -->
+  <main class="lg:ml-64 min-h-screen">
+    <!-- Header mobile -->
+    <header class="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 class="font-bold text-gray-900">RegulaCHECK</h1>
+      <button onclick="Utils.logout()" class="p-2 text-gray-400 hover:text-red-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
+    </header>
+
+    <div class="p-6 lg:p-8 max-w-7xl mx-auto">
+      <!-- Saudação -->
+      <div class="mb-8">
+        <h2 class="text-2xl lg:text-3xl font-bold text-gray-900" id="greeting"></h2>
+        <p class="text-gray-500 mt-1">Aqui está o resumo da sua conta e atividades recentes.</p>
+      </div>
+
+      <!-- Cards de métricas -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Card: Plano atual -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Plano Atual</span>
+            <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold text-gray-900" id="stat-plan">—</p>
+          <p class="text-xs text-gray-400 mt-1" id="stat-plan-price"></p>
+        </div>
+
+        <!-- Card: Buscas restantes -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Buscas Restantes</span>
+            <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold text-gray-900" id="stat-remaining">—</p>
+          <div class="mt-2">
+            <div class="w-full bg-gray-100 rounded-full h-2">
+              <div id="usage-bar" class="progress-bar bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-400 mt-1" id="stat-usage-text"></p>
+          </div>
+        </div>
+
+        <!-- Card: Total de buscas -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total de Buscas</span>
+            <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold text-gray-900" id="stat-total-searches">0</p>
+          <p class="text-xs text-gray-400 mt-1">desde o início</p>
+        </div>
+
+        <!-- Card: Resultados encontrados -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Resultados</span>
+            <div class="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold text-gray-900" id="stat-total-results">0</p>
+          <p class="text-xs text-gray-400 mt-1">regulamentações encontradas</p>
+        </div>
+      </div>
+
+      <!-- Ação rápida + Período -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- CTA Nova Busca -->
+        <a href="search.html" class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg">Nova Busca</h3>
+              <p class="text-blue-200 text-sm">Pesquisar regulamentações</p>
+            </div>
+          </div>
+        </a>
+
+        <!-- Info do período -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 class="text-sm font-semibold text-gray-900 mb-3">Período da Assinatura</h3>
+          <div class="flex items-center gap-4 text-sm text-gray-500">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <span>Início: <strong id="period-start" class="text-gray-700">—</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <span>Fim: <strong id="period-end" class="text-gray-700">—</strong></span>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+              <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+              Assinatura ativa
+            </span>
+            <a href="plans.html" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Fazer upgrade &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buscas recentes -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-gray-900">Buscas Recentes</h3>
+          <a href="history.html" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Ver todas &rarr;</a>
+        </div>
+        <div id="recent-searches" class="p-6">
+          <div class="text-center py-8 text-gray-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <p class="text-sm">Nenhuma busca realizada ainda.</p>
+            <a href="search.html" class="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2 inline-block">Fazer sua primeira busca &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    async function loadDashboard() {
+      const session = await Utils.checkAuth();
+      if (!session) return;
+      currentUser = session.user;
+
+      // Saudação
+      const hour = new Date().getHours();
+      let greet = 'Boa noite';
+      if (hour >= 5 && hour < 12) greet = 'Bom dia';
+      else if (hour >= 12 && hour < 18) greet = 'Boa tarde';
+
+      // Buscar perfil do usuário
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+      const userName = profile?.full_name || currentUser.email.split('@')[0];
+      document.getElementById('greeting').textContent = `${greet}, ${userName}!`;
+      document.getElementById('sidebar-name').textContent = userName;
+      document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
+
+      // Buscar dados do dashboard via RPC
+      const { data: stats, error } = await supabase.rpc('get_dashboard_stats', { p_user_id: currentUser.id });
+
+      if (error) {
+        console.error('Erro ao carregar dashboard:', error);
+        // Fallback: buscar dados diretamente
+        await loadDashboardFallback();
+        return;
+      }
+
+      renderDashboard(stats);
+    }
+
+    async function loadDashboardFallback() {
+      // Buscar assinatura
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('*, plans(*)')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      // Buscar contagens
+      const { count: totalSearches } = await supabase
+        .from('searches')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id);
+
+      const { count: totalResults } = await supabase
+        .from('results')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id);
+
+      // Buscas recentes
+      const { data: recentSearches } = await supabase
+        .from('searches')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const plan = sub?.plans;
+      const monthlyLimit = plan?.monthly_searches || 3;
+      const used = sub?.searches_used || 0;
+      const extra = sub?.extra_searches_purchased || 0;
+      const remaining = monthlyLimit + extra - used;
+
+      const stats = {
+        subscription: {
+          plan: plan?.name || 'free',
+          monthly_limit: monthlyLimit,
+          searches_used: used,
+          extra_purchased: extra,
+          remaining: remaining,
+          period_start: sub?.current_period_start,
+          period_end: sub?.current_period_end
+        },
+        total_searches: totalSearches || 0,
+        total_results: totalResults || 0,
+        recent_searches: recentSearches || []
+      };
+
+      renderDashboard(stats);
+    }
+
+    function renderDashboard(stats) {
+      const sub = stats.subscription;
+      const planName = sub.plan || 'free';
+      const displayNames = { free: 'Free', starter: 'Starter', professional: 'Professional' };
+      const prices = { free: 'Gratuito', starter: 'R$ 49,90/mês', professional: 'R$ 149,90/mês' };
+
+      // Plano
+      document.getElementById('stat-plan').textContent = displayNames[planName] || planName;
+      document.getElementById('stat-plan-price').textContent = prices[planName] || '';
+      document.getElementById('sidebar-plan').textContent = `Plano ${displayNames[planName]}`;
+
+      // Buscas restantes
+      const remaining = Math.max(0, sub.remaining || 0);
+      const total = (sub.monthly_limit || 3) + (sub.extra_purchased || 0);
+      const used = sub.searches_used || 0;
+      document.getElementById('stat-remaining').textContent = remaining;
+      document.getElementById('stat-usage-text').textContent = `${used} de ${total} utilizadas`;
+
+      // Barra de progresso
+      const pct = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+      const bar = document.getElementById('usage-bar');
+      bar.style.width = pct + '%';
+      if (pct > 80) bar.className = 'progress-bar bg-red-500 h-2 rounded-full';
+      else if (pct > 50) bar.className = 'progress-bar bg-yellow-500 h-2 rounded-full';
+
+      // Totais
+      document.getElementById('stat-total-searches').textContent = stats.total_searches || 0;
+      document.getElementById('stat-total-results').textContent = stats.total_results || 0;
+
+      // Período
+      document.getElementById('period-start').textContent = Utils.formatDate(sub.period_start);
+      document.getElementById('period-end').textContent = Utils.formatDate(sub.period_end);
+
+      // Buscas recentes
+      const searches = stats.recent_searches || [];
+      const container = document.getElementById('recent-searches');
+
+      if (searches.length === 0) return;
+
+      container.innerHTML = `
+        <div class="space-y-3">
+          ${searches.map(s => `
+            <a href="results.html?search_id=${s.id}" class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
+              <div class="flex items-center gap-4 min-w-0">
+                <div class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-900 truncate">${(s.keywords || []).join(', ')}</p>
+                  <p class="text-xs text-gray-400">${Utils.formatDate(s.date_start)} — ${Utils.formatDate(s.date_end)}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0">
+                ${Utils.statusBadge(s.status)}
+                <span class="text-xs text-gray-400">${s.results_count || 0} resultados</span>
+              </div>
+            </a>
+          `).join('')}
+        </div>`;
+    }
+
+    // Inicializar
+    loadDashboard();
+  </script>
+</body>
+</html>

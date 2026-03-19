@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegulaCHECK - Histórico</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .sidebar-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="p-6">
+      <a href="dashboard.html" class="flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">RegulaCHECK</h1>
+          <p class="text-xs text-gray-400">Monitoramento regulatório</p>
+        </div>
+      </a>
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="search.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Nova Busca
+        </a>
+        <a href="history.html" class="sidebar-link active flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Histórico
+        </a>
+        <a href="plans.html" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Planos
+        </a>
+      </nav>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3">
+        <div id="sidebar-avatar" class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm"></div>
+        <div class="flex-1 min-w-0">
+          <p id="sidebar-name" class="text-sm font-medium text-gray-900 truncate"></p>
+          <p id="sidebar-plan" class="text-xs text-gray-400 truncate"></p>
+        </div>
+        <button onclick="Utils.logout()" title="Sair" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo principal -->
+  <main class="lg:ml-64 min-h-screen">
+    <header class="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 class="font-bold text-gray-900">Histórico</h1>
+      <div class="w-10"></div>
+    </header>
+
+    <div class="p-6 lg:p-8 max-w-5xl mx-auto">
+      <!-- Título -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-2xl lg:text-3xl font-bold text-gray-900">Histórico de Buscas</h2>
+          <p class="text-gray-500 mt-1">Todas as suas buscas realizadas.</p>
+        </div>
+        <a href="search.html" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+          Nova Busca
+        </a>
+      </div>
+
+      <!-- Filtros -->
+      <div class="flex items-center gap-3 mb-6 flex-wrap">
+        <select id="filter-status" onchange="loadSearches()" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+          <option value="">Todos os status</option>
+          <option value="pending">Pendente</option>
+          <option value="processing">Processando</option>
+          <option value="completed">Concluída</option>
+          <option value="failed">Falhou</option>
+        </select>
+        <select id="filter-period" onchange="loadSearches()" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+          <option value="">Todo o período</option>
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+        </select>
+      </div>
+
+      <!-- Lista de buscas -->
+      <div id="searches-list" class="space-y-3">
+        <div class="text-center py-12 text-gray-400">
+          <svg class="w-12 h-12 mx-auto mb-3 text-gray-200 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <p class="text-sm">Carregando histórico...</p>
+        </div>
+      </div>
+
+      <!-- Paginação -->
+      <div id="pagination" class="hidden mt-6 flex items-center justify-between">
+        <p class="text-sm text-gray-400" id="pagination-info"></p>
+        <div class="flex items-center gap-2">
+          <button id="btn-prev" onclick="changePage(-1)" class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
+          <button id="btn-next" onclick="changePage(1)" class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Próxima</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+    let currentPage = 0;
+    const pageSize = 10;
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    async function loadSearches() {
+      const status = document.getElementById('filter-status').value;
+      const period = document.getElementById('filter-period').value;
+
+      let query = supabase
+        .from('searches')
+        .select('*', { count: 'exact' })
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
+
+      if (status) query = query.eq('status', status);
+      if (period) {
+        const since = new Date();
+        since.setDate(since.getDate() - parseInt(period));
+        query = query.gte('created_at', since.toISOString());
+      }
+
+      const { data: searches, count, error } = await query;
+
+      const container = document.getElementById('searches-list');
+
+      if (error) {
+        container.innerHTML = '<div class="text-center py-12 text-red-400"><p class="text-sm">Erro ao carregar histórico.</p></div>';
+        return;
+      }
+
+      if (!searches || searches.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="text-lg font-medium text-gray-500 mb-1">Nenhuma busca encontrada</p>
+            <p class="text-sm mb-4">Comece fazendo sua primeira busca por regulamentações.</p>
+            <a href="search.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Nova Busca
+            </a>
+          </div>`;
+        document.getElementById('pagination').classList.add('hidden');
+        return;
+      }
+
+      container.innerHTML = searches.map(s => `
+        <a href="results.html?search_id=${s.id}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-5 group">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4 min-w-0 flex-1">
+              <div class="w-11 h-11 bg-gray-50 rounded-xl flex items-center justify-center group-hover:bg-blue-50 transition-colors flex-shrink-0">
+                <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-gray-900 truncate">${(s.keywords || []).join(', ')}</p>
+                <div class="flex items-center gap-3 mt-1">
+                  <span class="text-xs text-gray-400">${Utils.formatDate(s.date_start)} — ${Utils.formatDate(s.date_end)}</span>
+                  <span class="text-xs text-gray-300">|</span>
+                  <span class="text-xs text-gray-400">${(s.sources || []).map(src => src.toUpperCase()).join(', ')}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 flex-shrink-0">
+              ${s.is_extra_search ? '<span class="text-xs text-orange-500 font-medium">Extra</span>' : ''}
+              <span class="text-xs text-gray-400">${s.results_count || 0} result.</span>
+              ${Utils.statusBadge(s.status)}
+              <svg class="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+          <p class="text-xs text-gray-300 mt-2">${Utils.formatDateTime(s.created_at)}</p>
+        </a>
+      `).join('');
+
+      // Paginação
+      const totalPages = Math.ceil((count || 0) / pageSize);
+      if (totalPages > 1) {
+        document.getElementById('pagination').classList.remove('hidden');
+        document.getElementById('pagination-info').textContent = `Página ${currentPage + 1} de ${totalPages} (${count} buscas)`;
+        document.getElementById('btn-prev').disabled = currentPage === 0;
+        document.getElementById('btn-next').disabled = currentPage >= totalPages - 1;
+      } else {
+        document.getElementById('pagination').classList.add('hidden');
+      }
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      if (currentPage < 0) currentPage = 0;
+      loadSearches();
+    }
+
+    async function loadPage() {
+      const session = await Utils.checkAuth();
+      if (!session) return;
+      currentUser = session.user;
+
+      const { data: profile } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      const userName = profile?.full_name || currentUser.email.split('@')[0];
+      document.getElementById('sidebar-name').textContent = userName;
+      document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
+      document.getElementById('sidebar-plan').textContent = '';
+
+      await loadSearches();
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
