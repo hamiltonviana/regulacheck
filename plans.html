@@ -10,7 +10,12 @@
   <style>
     * { font-family: 'Inter', sans-serif; }
     .sidebar-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .plan-card.recommended { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+    .plan-card.recommended { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6; }
+    .plan-card.current-plan { border-color: #10b981; box-shadow: 0 0 0 2px #10b981; }
+    .payment-option { transition: all 0.2s; }
+    .payment-option:hover { transform: translateY(-2px); }
+    .payment-option.selected { border-color: #3b82f6; background: #eff6ff; }
+    .modal-backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -79,33 +84,22 @@
         <p class="text-gray-500 mt-2 max-w-lg mx-auto">Todos os planos incluem acesso às fontes Anvisa, ABNT, ISO e DOU. Faça upgrade a qualquer momento.</p>
       </div>
 
+      <!-- Banner do plano atual -->
+      <div id="current-plan-banner" class="hidden mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-green-800">Seu plano atual: <span id="current-plan-name"></span></p>
+            <p class="text-xs text-green-600" id="current-plan-period"></p>
+          </div>
+        </div>
+      </div>
+
       <!-- Cards de planos -->
       <div id="plans-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <!-- Preenchido via JS -->
-      </div>
-
-      <!-- Seção de buscas extras -->
-      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-        <h3 class="text-xl font-bold text-gray-900 mb-2">Precisa de mais buscas?</h3>
-        <p class="text-gray-500 text-sm mb-6 max-w-md mx-auto">Compre pacotes de buscas extras sem precisar mudar de plano. As buscas extras são válidas até o final do período atual.</p>
-        <div class="flex items-center justify-center gap-4 flex-wrap">
-          <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-5 py-3">
-            <label class="text-sm text-gray-600">Quantidade:</label>
-            <select id="extra-qty" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
-              <option value="5">5 buscas</option>
-              <option value="10">10 buscas</option>
-              <option value="20">20 buscas</option>
-              <option value="50">50 buscas</option>
-            </select>
-          </div>
-          <div class="text-sm text-gray-500">
-            Valor: <strong id="extra-price" class="text-gray-900">—</strong>
-          </div>
-          <button onclick="purchaseExtra()" id="btn-purchase-extra"
-            class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20">
-            Comprar
-          </button>
-        </div>
       </div>
 
       <!-- Comparação de features -->
@@ -120,27 +114,27 @@
                 <th class="text-left p-4 font-medium text-gray-500">Recurso</th>
                 <th class="text-center p-4 font-medium text-gray-500">Free</th>
                 <th class="text-center p-4 font-medium text-blue-600">Starter</th>
-                <th class="text-center p-4 font-medium text-gray-500">Professional</th>
+                <th class="text-center p-4 font-medium text-purple-600">Professional</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
               <tr>
                 <td class="p-4 text-gray-700">Buscas por mês</td>
-                <td class="p-4 text-center font-medium">3</td>
+                <td class="p-4 text-center font-medium">5</td>
                 <td class="p-4 text-center font-medium text-blue-600">20</td>
-                <td class="p-4 text-center font-medium">100</td>
+                <td class="p-4 text-center font-medium text-purple-600">Ilimitadas</td>
               </tr>
               <tr>
                 <td class="p-4 text-gray-700">Palavras-chave por busca</td>
-                <td class="p-4 text-center">5</td>
+                <td class="p-4 text-center">2</td>
                 <td class="p-4 text-center">5</td>
                 <td class="p-4 text-center">5</td>
               </tr>
               <tr>
-                <td class="p-4 text-gray-700">Busca extra (unidade)</td>
-                <td class="p-4 text-center">R$ 9,90</td>
-                <td class="p-4 text-center text-blue-600">R$ 7,90</td>
-                <td class="p-4 text-center">R$ 4,90</td>
+                <td class="p-4 text-gray-700">Período dos resultados</td>
+                <td class="p-4 text-center text-gray-400">15 dias</td>
+                <td class="p-4 text-center text-blue-600">30 dias</td>
+                <td class="p-4 text-center text-purple-600">90 dias</td>
               </tr>
               <tr>
                 <td class="p-4 text-gray-700">Fontes (Anvisa, ABNT, ISO, DOU)</td>
@@ -149,25 +143,19 @@
                 <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
               </tr>
               <tr>
-                <td class="p-4 text-gray-700">Histórico completo</td>
-                <td class="p-4 text-center text-gray-300">30 dias</td>
-                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
-                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
-              </tr>
-              <tr>
-                <td class="p-4 text-gray-700">Exportação de resultados</td>
-                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
-                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
-                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
-              </tr>
-              <tr>
                 <td class="p-4 text-gray-700">Alertas por e-mail</td>
                 <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
-                <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
-                <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
+                <td class="p-4 text-center text-blue-600 text-xs font-medium">Semanais</td>
+                <td class="p-4 text-center text-purple-600 text-xs font-medium">Diários</td>
               </tr>
               <tr>
-                <td class="p-4 text-gray-700">API de integração</td>
+                <td class="p-4 text-gray-700">Histórico</td>
+                <td class="p-4 text-center text-gray-400 text-xs">Sem histórico</td>
+                <td class="p-4 text-center text-blue-600 text-xs">90 dias</td>
+                <td class="p-4 text-center text-purple-600 text-xs">Completo</td>
+              </tr>
+              <tr>
+                <td class="p-4 text-gray-700">Exportação de relatórios</td>
                 <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
                 <td class="p-4 text-center text-gray-300"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></td>
                 <td class="p-4 text-center text-green-500"><svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></td>
@@ -176,55 +164,248 @@
                 <td class="p-4 text-gray-700">Suporte</td>
                 <td class="p-4 text-center text-gray-400 text-xs">Comunidade</td>
                 <td class="p-4 text-center text-blue-600 text-xs">E-mail</td>
-                <td class="p-4 text-center text-xs font-medium">Prioritário</td>
+                <td class="p-4 text-center text-purple-600 text-xs font-medium">Prioritário</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- Formas de pagamento aceitas -->
+      <div class="mt-8 text-center">
+        <p class="text-xs text-gray-400 mb-3">Formas de pagamento aceitas</p>
+        <div class="flex items-center justify-center gap-6">
+          <div class="flex items-center gap-2 text-gray-400">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+            <span class="text-xs">Cartão de Crédito</span>
+          </div>
+          <div class="flex items-center gap-2 text-gray-400">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg>
+            <span class="text-xs">Boleto</span>
+          </div>
+          <div class="flex items-center gap-2 text-gray-400">
+            <svg class="w-5 h-5" viewBox="0 0 512 512" fill="currentColor"><path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C344.9 374.9 344.9 384.1 339.5 389.5L262.5 466.5C257.1 471.9 247.8 471.9 242.4 466.5L165.4 389.5C160 384.1 160 374.9 165.4 369.5L242.4 292.5zM262.5 45.49C257.1 40.17 247.8 40.17 242.4 45.49L165.4 122.5C160 127.9 160 137.1 165.4 142.5L242.4 219.5C247.8 224.8 257.1 224.8 262.5 219.5L339.5 142.5C344.9 137.1 344.9 127.9 339.5 122.5L262.5 45.49zM410.5 189.5C405.1 184.2 395.8 184.2 390.5 189.5L313.5 266.5C308.1 271.9 308.1 281.1 313.5 286.5L390.5 363.5C395.8 368.8 405.1 368.8 410.5 363.5L487.5 286.5C492.9 281.1 492.9 271.9 487.5 266.5L410.5 189.5zM121.5 189.5C116.2 184.2 106.8 184.2 101.5 189.5L24.49 266.5C19.17 271.9 19.17 281.1 24.49 286.5L101.5 363.5C106.8 368.8 116.2 368.8 121.5 363.5L198.5 286.5C203.8 281.1 203.8 271.9 198.5 266.5L121.5 189.5z"/></svg>
+            <span class="text-xs">PIX</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-300 mt-3">Pagamentos processados com segurança pelo Asaas</p>
+      </div>
     </div>
   </main>
+
+  <!-- ============================================================ -->
+  <!-- Modal de Pagamento -->
+  <!-- ============================================================ -->
+  <div id="payment-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="modal-backdrop absolute inset-0" onclick="closePaymentModal()"></div>
+    <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <!-- Header do modal -->
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">Assinar Plano</h3>
+            <p class="text-sm text-gray-500" id="modal-plan-name"></p>
+          </div>
+          <button onclick="closePaymentModal()" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Formulário de pagamento -->
+        <div id="step-customer" class="p-6">
+          <!-- Dados do cliente -->
+          <div class="mb-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">1</div>
+              <h4 class="font-semibold text-gray-900">Seus dados</h4>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nome completo *</label>
+                <input type="text" id="pay-name" required
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  placeholder="Seu nome completo">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">CPF ou CNPJ *</label>
+                <input type="text" id="pay-cpf" required maxlength="18"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  placeholder="000.000.000-00" oninput="maskCpfCnpj(this)">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                <input type="email" id="pay-email" readonly
+                  class="w-full px-4 py-2.5 border border-gray-100 rounded-xl text-sm bg-gray-50 text-gray-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Telefone (opcional)</label>
+                <input type="text" id="pay-phone" maxlength="15"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  placeholder="(00) 00000-0000" oninput="maskPhone(this)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Forma de pagamento -->
+          <div class="mb-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">2</div>
+              <h4 class="font-semibold text-gray-900">Forma de pagamento</h4>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <button onclick="selectPaymentMethod('PIX')" id="pm-pix"
+                class="payment-option flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-300">
+                <svg class="w-8 h-8 text-teal-500" viewBox="0 0 512 512" fill="currentColor"><path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C344.9 374.9 344.9 384.1 339.5 389.5L262.5 466.5C257.1 471.9 247.8 471.9 242.4 466.5L165.4 389.5C160 384.1 160 374.9 165.4 369.5L242.4 292.5zM262.5 45.49C257.1 40.17 247.8 40.17 242.4 45.49L165.4 122.5C160 127.9 160 137.1 165.4 142.5L242.4 219.5C247.8 224.8 257.1 224.8 262.5 219.5L339.5 142.5C344.9 137.1 344.9 127.9 339.5 122.5L262.5 45.49zM410.5 189.5C405.1 184.2 395.8 184.2 390.5 189.5L313.5 266.5C308.1 271.9 308.1 281.1 313.5 286.5L390.5 363.5C395.8 368.8 405.1 368.8 410.5 363.5L487.5 286.5C492.9 281.1 492.9 271.9 487.5 266.5L410.5 189.5zM121.5 189.5C116.2 184.2 106.8 184.2 101.5 189.5L24.49 266.5C19.17 271.9 19.17 281.1 24.49 286.5L101.5 363.5C106.8 368.8 116.2 368.8 121.5 363.5L198.5 286.5C203.8 281.1 203.8 271.9 198.5 266.5L121.5 189.5z"/></svg>
+                <span class="text-xs font-medium text-gray-700">PIX</span>
+              </button>
+              <button onclick="selectPaymentMethod('BOLETO')" id="pm-boleto"
+                class="payment-option flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-300">
+                <svg class="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg>
+                <span class="text-xs font-medium text-gray-700">Boleto</span>
+              </button>
+              <button onclick="selectPaymentMethod('CREDIT_CARD')" id="pm-card"
+                class="payment-option flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-300">
+                <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                <span class="text-xs font-medium text-gray-700">Cartão</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dados do cartão de crédito -->
+          <div id="credit-card-fields" class="hidden mb-6">
+            <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Nome no cartão *</label>
+                <input type="text" id="cc-name"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="Nome como está no cartão">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Número do cartão *</label>
+                <input type="text" id="cc-number" maxlength="19"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="0000 0000 0000 0000" oninput="maskCardNumber(this)">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Validade *</label>
+                  <input type="text" id="cc-expiry" maxlength="5"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    placeholder="MM/AA" oninput="maskExpiry(this)">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">CVV *</label>
+                  <input type="text" id="cc-cvv" maxlength="4"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    placeholder="000">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">CEP do titular *</label>
+                <input type="text" id="cc-cep" maxlength="9"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="00000-000" oninput="maskCep(this)">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Número do endereço *</label>
+                <input type="text" id="cc-address-number"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="123">
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumo -->
+          <div class="bg-blue-50 rounded-xl p-4 mb-6">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Total mensal:</span>
+              <span class="text-xl font-bold text-gray-900" id="modal-price"></span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Cobrança recorrente mensal. Cancele quando quiser.</p>
+          </div>
+
+          <!-- Erro -->
+          <div id="payment-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600"></div>
+
+          <!-- Botão -->
+          <button onclick="processPayment()" id="btn-subscribe"
+            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <span>Assinar agora</span>
+          </button>
+        </div>
+
+        <!-- Resultado do pagamento -->
+        <div id="step-result" class="hidden p-6">
+          <div id="result-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="config.js"></script>
   <script>
     let currentUser = null;
     let currentPlan = 'free';
-    let extraSearchPrice = 9.90;
+    let currentSubscription = null;
     let allPlans = [];
+    let selectedPlan = null;
+    let selectedPaymentMethod = null;
+
+    const PLAN_DEFINITIONS = {
+      free: {
+        price: 0, searches: 5, keywords: 2,
+        features: ['5 buscas por mês', 'Até 2 palavras-chave por busca', 'Resultados dos últimos 15 dias', 'Fontes: Anvisa, ABNT, ISO, DOU']
+      },
+      starter: {
+        price: 44.90, searches: 20, keywords: 5,
+        features: ['20 buscas por mês', 'Até 5 palavras-chave por busca', 'Resultados dos últimos 30 dias', 'Alertas por e-mail semanais', 'Histórico de 90 dias', 'Suporte por e-mail']
+      },
+      professional: {
+        price: 152.90, searches: 999999, keywords: 5,
+        features: ['Buscas ilimitadas', 'Até 5 palavras-chave por busca', 'Resultados dos últimos 90 dias', 'Alertas por e-mail diários', 'Histórico completo', 'Exportação de relatórios', 'Suporte prioritário']
+      }
+    };
 
     function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebar-overlay');
-      sidebar.classList.toggle('-translate-x-full');
-      overlay.classList.toggle('hidden');
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
     }
 
-    function updateExtraPrice() {
-      const qty = parseInt(document.getElementById('extra-qty').value);
-      document.getElementById('extra-price').textContent = Utils.formatCurrency(qty * extraSearchPrice);
-    }
-
-    async function purchaseExtra() {
-      const qty = parseInt(document.getElementById('extra-qty').value);
-      const btn = document.getElementById('btn-purchase-extra');
-      btn.disabled = true;
-      btn.textContent = 'Processando...';
-
-      const { data, error } = await supabaseClient.rpc('purchase_extra_searches', {
-        p_user_id: currentUser.id,
-        p_quantity: qty
-      });
-
-      if (error || (data && !data.success)) {
-        Utils.showToast(data?.error || 'Erro ao comprar buscas extras.', 'error');
+    // Máscaras de input
+    function maskCpfCnpj(input) {
+      let v = input.value.replace(/\D/g, '');
+      if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
       } else {
-        Utils.showToast(`${qty} buscas extras adicionadas com sucesso!`, 'success');
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
       }
-
-      btn.disabled = false;
-      btn.textContent = 'Comprar';
+      input.value = v;
+    }
+    function maskPhone(input) {
+      let v = input.value.replace(/\D/g, '');
+      v = v.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+      input.value = v;
+    }
+    function maskCardNumber(input) {
+      let v = input.value.replace(/\D/g, '');
+      v = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+      input.value = v;
+    }
+    function maskExpiry(input) {
+      let v = input.value.replace(/\D/g, '');
+      if (v.length >= 2) v = v.substring(0, 2) + '/' + v.substring(2);
+      input.value = v;
+    }
+    function maskCep(input) {
+      let v = input.value.replace(/\D/g, '');
+      v = v.replace(/(\d{5})(\d)/, '$1-$2');
+      input.value = v;
     }
 
+    // ============================================================
+    // Carregar página
+    // ============================================================
     async function loadPage() {
       const session = await Utils.checkAuth();
       if (!session) return;
@@ -235,86 +416,351 @@
       document.getElementById('sidebar-name').textContent = userName;
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
 
-      // Buscar plano atual
       const { data: sub } = await supabaseClient
-        .from('subscriptions')
-        .select('*, plans(*)')
-        .eq('user_id', currentUser.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .from('subscriptions').select('*, plans(*)').eq('user_id', currentUser.id).eq('status', 'active')
+        .order('created_at', { ascending: false }).limit(1).single();
 
       if (sub?.plans) {
         currentPlan = sub.plans.name;
-        extraSearchPrice = parseFloat(sub.plans.extra_search_price) || 9.90;
-        document.getElementById('sidebar-plan').textContent = `Plano ${sub.plans.display_name}`;
+        currentSubscription = sub;
+        document.getElementById('sidebar-plan').textContent = 'Plano ' + sub.plans.display_name;
+        document.getElementById('current-plan-banner').classList.remove('hidden');
+        document.getElementById('current-plan-name').textContent = sub.plans.display_name;
+        document.getElementById('current-plan-period').textContent =
+          'Período: ' + Utils.formatDate(sub.current_period_start) + ' a ' + Utils.formatDate(sub.current_period_end);
       }
 
-      // Buscar todos os planos
       const { data: plans } = await supabaseClient
-        .from('plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_monthly', { ascending: true });
-
+        .from('plans').select('*').eq('is_active', true).order('price_monthly', { ascending: true });
       allPlans = plans || [];
       renderPlans();
-      updateExtraPrice();
-
-      // Listener para atualizar preço
-      document.getElementById('extra-qty').addEventListener('change', updateExtraPrice);
     }
 
+    // ============================================================
+    // Renderizar planos
+    // ============================================================
     function renderPlans() {
       const grid = document.getElementById('plans-grid');
       const icons = {
-        free: `<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-        starter: `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
-        professional: `<svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>`
+        free: '<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        starter: '<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+        professional: '<svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>'
       };
+      const planOrder = ['free', 'starter', 'professional'];
+      const planPrices = { free: 0, starter: 44.90, professional: 152.90 };
 
-      grid.innerHTML = allPlans.map(plan => {
-        const isRecommended = plan.name === 'starter';
-        const isCurrent = plan.name === currentPlan;
-        const features = plan.features || [];
+      grid.innerHTML = planOrder.map(function(planName) {
+        var dbPlan = allPlans.find(function(p) { return p.name === planName; });
+        var def = PLAN_DEFINITIONS[planName];
+        var isRecommended = planName === 'starter';
+        var isCurrent = planName === currentPlan;
+        var isDowngrade = planOrder.indexOf(planName) < planOrder.indexOf(currentPlan);
+        var price = planPrices[planName];
+        var displayName = dbPlan ? dbPlan.display_name : planName.charAt(0).toUpperCase() + planName.slice(1);
+        var description = dbPlan ? dbPlan.description : '';
+        var features = def.features;
 
-        return `
-          <div class="plan-card ${isRecommended ? 'recommended' : ''} relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all p-6 flex flex-col">
-            ${isRecommended ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">Recomendado</div>' : ''}
-            <div class="mb-6">
-              <div class="mb-4">${icons[plan.name] || icons.free}</div>
-              <h3 class="text-xl font-bold text-gray-900">${plan.display_name}</h3>
-              <p class="text-sm text-gray-500 mt-1">${plan.description}</p>
-            </div>
-            <div class="mb-6">
-              <div class="flex items-baseline gap-1">
-                <span class="text-3xl font-bold text-gray-900">${plan.price_monthly > 0 ? Utils.formatCurrency(plan.price_monthly) : 'Grátis'}</span>
-                ${plan.price_monthly > 0 ? '<span class="text-sm text-gray-400">/mês</span>' : ''}
-              </div>
-              <p class="text-xs text-gray-400 mt-1">${plan.monthly_searches} buscas/mês | Extra: ${Utils.formatCurrency(plan.extra_search_price)}/busca</p>
-            </div>
-            <ul class="space-y-3 mb-8 flex-1">
-              ${features.map(f => `
-                <li class="flex items-start gap-2 text-sm text-gray-600">
-                  <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                  ${f}
-                </li>
-              `).join('')}
-            </ul>
-            <button
-              onclick="${isCurrent ? '' : `alert('Integração com gateway de pagamento em breve!')`}"
-              class="w-full py-3 rounded-xl text-sm font-semibold transition-all ${
-                isCurrent
-                  ? 'bg-gray-100 text-gray-400 cursor-default'
-                  : isRecommended
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25'
-                    : 'bg-gray-900 hover:bg-gray-800 text-white'
-              }">
-              ${isCurrent ? 'Plano atual' : plan.price_monthly > 0 ? 'Assinar agora' : 'Começar grátis'}
-            </button>
-          </div>`;
+        var cardClass = 'plan-card relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all p-6 flex flex-col';
+        if (isCurrent) cardClass += ' current-plan';
+        else if (isRecommended) cardClass += ' recommended';
+
+        var badge = '';
+        if (isCurrent) badge = '<div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-green-500 text-white text-xs font-semibold rounded-full whitespace-nowrap">Plano atual</div>';
+        else if (isRecommended) badge = '<div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">Recomendado</div>';
+
+        var btnClass, btnText, btnOnclick;
+        if (isCurrent) {
+          btnClass = 'bg-green-50 text-green-600 border border-green-200 cursor-default';
+          btnText = '&#10003; Plano atual';
+          btnOnclick = '';
+        } else if (isDowngrade) {
+          btnClass = 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200';
+          btnText = 'Plano inferior';
+          btnOnclick = '';
+        } else if (price === 0) {
+          btnClass = 'bg-gray-100 text-gray-500 cursor-default';
+          btnText = 'Plano gratuito';
+          btnOnclick = '';
+        } else {
+          btnClass = isRecommended
+            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25'
+            : 'bg-gray-900 hover:bg-gray-800 text-white';
+          btnText = 'Assinar agora';
+          btnOnclick = "openPaymentModal('" + planName + "', " + price + ", '" + displayName + "')";
+        }
+
+        return '<div class="' + cardClass + '">' +
+          badge +
+          '<div class="mb-6"><div class="mb-4">' + (icons[planName] || icons.free) + '</div>' +
+          '<h3 class="text-xl font-bold text-gray-900">' + displayName + '</h3>' +
+          '<p class="text-sm text-gray-500 mt-1">' + description + '</p></div>' +
+          '<div class="mb-6"><div class="flex items-baseline gap-1">' +
+          '<span class="text-3xl font-bold text-gray-900">' + (price > 0 ? Utils.formatCurrency(price) : 'Grátis') + '</span>' +
+          (price > 0 ? '<span class="text-sm text-gray-400">/mês</span>' : '') +
+          '</div>' +
+          '<p class="text-xs text-gray-400 mt-1">' + (def.searches >= 999999 ? 'Buscas ilimitadas' : def.searches + ' buscas/mês') + '</p></div>' +
+          '<ul class="space-y-3 mb-8 flex-1">' +
+          features.map(function(f) {
+            return '<li class="flex items-start gap-2 text-sm text-gray-600">' +
+              '<svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
+              f + '</li>';
+          }).join('') +
+          '</ul>' +
+          '<button onclick="' + btnOnclick + '" class="w-full py-3 rounded-xl text-sm font-semibold transition-all ' + btnClass + '"' +
+          (isCurrent || isDowngrade || price === 0 ? ' disabled' : '') + '>' + btnText + '</button></div>';
       }).join('');
+    }
+
+    // ============================================================
+    // Modal de pagamento
+    // ============================================================
+    function openPaymentModal(planName, price, displayName) {
+      selectedPlan = { name: planName, price: price, displayName: displayName };
+      selectedPaymentMethod = null;
+
+      document.getElementById('modal-plan-name').textContent = displayName + ' — ' + Utils.formatCurrency(price) + '/mês';
+      document.getElementById('modal-price').textContent = Utils.formatCurrency(price);
+      document.getElementById('pay-email').value = currentUser.email;
+
+      var sidebarName = document.getElementById('sidebar-name').textContent;
+      if (sidebarName) document.getElementById('pay-name').value = sidebarName;
+
+      document.getElementById('step-customer').classList.remove('hidden');
+      document.getElementById('step-result').classList.add('hidden');
+      document.getElementById('payment-error').classList.add('hidden');
+      document.getElementById('credit-card-fields').classList.add('hidden');
+      document.getElementById('btn-subscribe').disabled = false;
+      document.getElementById('btn-subscribe').innerHTML =
+        '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>' +
+        '<span>Assinar agora</span>';
+
+      document.querySelectorAll('.payment-option').forEach(function(el) { el.classList.remove('selected'); });
+      document.getElementById('payment-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePaymentModal() {
+      document.getElementById('payment-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function selectPaymentMethod(method) {
+      selectedPaymentMethod = method;
+      document.querySelectorAll('.payment-option').forEach(function(el) { el.classList.remove('selected'); });
+      var id = method === 'CREDIT_CARD' ? 'pm-card' : 'pm-' + method.toLowerCase();
+      document.getElementById(id).classList.add('selected');
+      var ccFields = document.getElementById('credit-card-fields');
+      if (method === 'CREDIT_CARD') ccFields.classList.remove('hidden');
+      else ccFields.classList.add('hidden');
+    }
+
+    function showPaymentError(msg) {
+      var el = document.getElementById('payment-error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    // ============================================================
+    // Processar pagamento
+    // ============================================================
+    async function processPayment() {
+      var btn = document.getElementById('btn-subscribe');
+      document.getElementById('payment-error').classList.add('hidden');
+
+      var name = document.getElementById('pay-name').value.trim();
+      var cpfCnpj = document.getElementById('pay-cpf').value.trim();
+      var email = document.getElementById('pay-email').value.trim();
+      var phone = document.getElementById('pay-phone').value.trim();
+
+      if (!name) { showPaymentError('Informe seu nome completo.'); return; }
+      if (!cpfCnpj || cpfCnpj.replace(/\D/g, '').length < 11) {
+        showPaymentError('Informe um CPF ou CNPJ válido.'); return;
+      }
+      if (!selectedPaymentMethod) { showPaymentError('Selecione uma forma de pagamento.'); return; }
+
+      if (selectedPaymentMethod === 'CREDIT_CARD') {
+        var ccName = document.getElementById('cc-name').value.trim();
+        var ccNumber = document.getElementById('cc-number').value.replace(/\s/g, '');
+        var ccExpiry = document.getElementById('cc-expiry').value.trim();
+        var ccCvv = document.getElementById('cc-cvv').value.trim();
+        var ccCep = document.getElementById('cc-cep').value.replace(/\D/g, '');
+        var ccAddr = document.getElementById('cc-address-number').value.trim();
+        if (!ccName) { showPaymentError('Informe o nome no cartão.'); return; }
+        if (ccNumber.length < 13) { showPaymentError('Número do cartão inválido.'); return; }
+        if (!ccExpiry || ccExpiry.length < 5) { showPaymentError('Validade do cartão inválida.'); return; }
+        if (!ccCvv || ccCvv.length < 3) { showPaymentError('CVV inválido.'); return; }
+        if (!ccCep || ccCep.length < 8) { showPaymentError('CEP do titular inválido.'); return; }
+        if (!ccAddr) { showPaymentError('Informe o número do endereço.'); return; }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML =
+        '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>' +
+        '<span>Processando...</span>';
+
+      try {
+        // 1. Criar/buscar cliente no Asaas
+        var custRes = await fetch('/api/asaas-customer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+            email: email,
+            phone: phone.replace(/\D/g, '') || undefined,
+            externalReference: currentUser.id
+          })
+        });
+        var custData = await custRes.json();
+        if (!custRes.ok || !custData.success) {
+          throw new Error(custData.error || (custData.details && custData.details.errors && custData.details.errors[0] ? custData.details.errors[0].description : 'Erro ao criar cliente'));
+        }
+        var customerId = custData.customer.id;
+
+        // 2. Montar payload da assinatura
+        var subPayload = {
+          customerId: customerId,
+          billingType: selectedPaymentMethod,
+          value: selectedPlan.price,
+          planName: selectedPlan.name,
+          userId: currentUser.id
+        };
+
+        if (selectedPaymentMethod === 'CREDIT_CARD') {
+          var expiryParts = document.getElementById('cc-expiry').value.split('/');
+          subPayload.creditCard = {
+            holderName: document.getElementById('cc-name').value.trim(),
+            number: document.getElementById('cc-number').value.replace(/\s/g, ''),
+            expiryMonth: expiryParts[0],
+            expiryYear: '20' + expiryParts[1],
+            ccv: document.getElementById('cc-cvv').value.trim()
+          };
+          subPayload.creditCardHolderInfo = {
+            name: name, email: email,
+            cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+            postalCode: document.getElementById('cc-cep').value.replace(/\D/g, ''),
+            addressNumber: document.getElementById('cc-address-number').value.trim(),
+            phone: phone.replace(/\D/g, '') || undefined
+          };
+        }
+
+        // 3. Criar assinatura
+        var subRes = await fetch('/api/asaas-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(subPayload)
+        });
+        var subData = await subRes.json();
+        if (!subRes.ok || !subData.success) {
+          throw new Error(subData.error || (subData.details && subData.details.errors && subData.details.errors[0] ? subData.details.errors[0].description : 'Erro ao criar assinatura'));
+        }
+
+        // 4. Atualizar Supabase
+        try {
+          await fetch('/api/update-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser.id,
+              planName: selectedPlan.name,
+              asaasSubscriptionId: subData.subscription.id,
+              asaasCustomerId: customerId
+            })
+          });
+        } catch (e) { console.error('Erro ao atualizar Supabase:', e); }
+
+        // 5. Mostrar resultado
+        showPaymentResult(subData, selectedPaymentMethod);
+
+      } catch (error) {
+        console.error('Erro:', error);
+        showPaymentError(error.message || 'Erro ao processar pagamento. Tente novamente.');
+        btn.disabled = false;
+        btn.innerHTML =
+          '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>' +
+          '<span>Assinar agora</span>';
+      }
+    }
+
+    // ============================================================
+    // Resultado do pagamento
+    // ============================================================
+    function showPaymentResult(data, paymentMethod) {
+      document.getElementById('step-customer').classList.add('hidden');
+      document.getElementById('step-result').classList.remove('hidden');
+      var resultDiv = document.getElementById('result-content');
+      var payment = data.payment;
+
+      if (paymentMethod === 'CREDIT_CARD') {
+        resultDiv.innerHTML =
+          '<div class="text-center py-6">' +
+          '<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>' +
+          '<h3 class="text-xl font-bold text-gray-900 mb-2">Assinatura ativada!</h3>' +
+          '<p class="text-gray-500 text-sm mb-6">Seu plano ' + selectedPlan.displayName + ' foi ativado com sucesso.</p>' +
+          '<div class="bg-gray-50 rounded-xl p-4 text-left mb-6">' +
+          '<div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Plano:</span><span class="font-medium">' + selectedPlan.displayName + '</span></div>' +
+          '<div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Valor:</span><span class="font-medium">' + Utils.formatCurrency(selectedPlan.price) + '/mês</span></div>' +
+          '<div class="flex justify-between text-sm"><span class="text-gray-500">Status:</span><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Ativo</span></div></div>' +
+          '<button onclick="window.location.href=\'dashboard.html\'" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all">Ir para o Dashboard</button></div>';
+
+      } else if (paymentMethod === 'PIX') {
+        var invoiceUrl = payment ? payment.invoiceUrl : '';
+        var pixQr = payment ? payment.pixQrCode : null;
+        var html = '<div class="text-center py-4">' +
+          '<div class="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-teal-500" viewBox="0 0 512 512" fill="currentColor"><path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C344.9 374.9 344.9 384.1 339.5 389.5L262.5 466.5C257.1 471.9 247.8 471.9 242.4 466.5L165.4 389.5C160 384.1 160 374.9 165.4 369.5L242.4 292.5zM262.5 45.49C257.1 40.17 247.8 40.17 242.4 45.49L165.4 122.5C160 127.9 160 137.1 165.4 142.5L242.4 219.5C247.8 224.8 257.1 224.8 262.5 219.5L339.5 142.5C344.9 137.1 344.9 127.9 339.5 122.5L262.5 45.49zM410.5 189.5C405.1 184.2 395.8 184.2 390.5 189.5L313.5 266.5C308.1 271.9 308.1 281.1 313.5 286.5L390.5 363.5C395.8 368.8 405.1 368.8 410.5 363.5L487.5 286.5C492.9 281.1 492.9 271.9 487.5 266.5L410.5 189.5zM121.5 189.5C116.2 184.2 106.8 184.2 101.5 189.5L24.49 266.5C19.17 271.9 19.17 281.1 24.49 286.5L101.5 363.5C106.8 368.8 116.2 368.8 121.5 363.5L198.5 286.5C203.8 281.1 203.8 271.9 198.5 266.5L121.5 189.5z"/></svg></div>' +
+          '<h3 class="text-xl font-bold text-gray-900 mb-2">Pague via PIX</h3>' +
+          '<p class="text-gray-500 text-sm mb-4">Escaneie o QR Code ou use o link abaixo para pagar.</p>';
+
+        if (pixQr && pixQr.encodedImage) {
+          html += '<div class="bg-white border border-gray-200 rounded-xl p-4 inline-block mb-4"><img src="data:image/png;base64,' + pixQr.encodedImage + '" alt="QR Code PIX" class="w-48 h-48 mx-auto"></div>';
+          html += '<div class="mb-4"><button onclick="copyPixCode()" class="inline-flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>Copiar código PIX</button><input type="hidden" id="pix-code" value="' + (pixQr.payload || '') + '"></div>';
+        }
+
+        if (invoiceUrl) {
+          html += '<a href="' + invoiceUrl + '" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all mb-4"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Abrir página de pagamento</a>';
+        }
+
+        html += '<div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-left mt-4"><p class="text-xs text-yellow-700"><strong>Importante:</strong> Após o pagamento ser confirmado, seu plano será ativado automaticamente.</p></div>' +
+          '<button onclick="window.location.href=\'dashboard.html\'" class="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all">Voltar ao Dashboard</button></div>';
+        resultDiv.innerHTML = html;
+
+      } else if (paymentMethod === 'BOLETO') {
+        var invoiceUrl2 = payment ? payment.invoiceUrl : '';
+        var bankSlipUrl = payment ? payment.bankSlipUrl : '';
+        var html2 = '<div class="text-center py-4">' +
+          '<div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg></div>' +
+          '<h3 class="text-xl font-bold text-gray-900 mb-2">Boleto gerado!</h3>' +
+          '<p class="text-gray-500 text-sm mb-6">Após o pagamento (1-3 dias úteis), seu plano será ativado automaticamente.</p>' +
+          '<div class="bg-gray-50 rounded-xl p-4 text-left mb-6">' +
+          '<div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Plano:</span><span class="font-medium">' + selectedPlan.displayName + '</span></div>' +
+          '<div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Valor:</span><span class="font-medium">' + Utils.formatCurrency(selectedPlan.price) + '</span></div>' +
+          '<div class="flex justify-between text-sm"><span class="text-gray-500">Vencimento:</span><span class="font-medium">' + (payment && payment.dueDate ? Utils.formatDate(payment.dueDate) : 'Em breve') + '</span></div></div>' +
+          '<div class="space-y-3">';
+
+        if (invoiceUrl2) {
+          html2 += '<a href="' + invoiceUrl2 + '" target="_blank" class="w-full inline-flex items-center justify-center gap-2 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Ver boleto / Pagar online</a>';
+        }
+        if (bankSlipUrl) {
+          html2 += '<a href="' + bankSlipUrl + '" target="_blank" class="w-full inline-flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Baixar boleto PDF</a>';
+        }
+
+        html2 += '<button onclick="window.location.href=\'dashboard.html\'" class="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-600 font-semibold rounded-xl transition-all">Voltar ao Dashboard</button></div></div>';
+        resultDiv.innerHTML = html2;
+      }
+    }
+
+    function copyPixCode() {
+      var code = document.getElementById('pix-code') ? document.getElementById('pix-code').value : '';
+      if (code) {
+        navigator.clipboard.writeText(code).then(function() {
+          Utils.showToast('Código PIX copiado!', 'success');
+        }).catch(function() {
+          var ta = document.createElement('textarea');
+          ta.value = code; document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+          Utils.showToast('Código PIX copiado!', 'success');
+        });
+      }
     }
 
     loadPage();
