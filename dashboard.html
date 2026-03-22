@@ -174,8 +174,8 @@
               <span>Fim: <strong id="period-end" class="text-gray-700">—</strong></span>
             </div>
           </div>
-          <div class="mt-4 flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+          <div class="mt-4 flex items-center gap-4">
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
               <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
               Assinatura ativa
             </span>
@@ -235,21 +235,19 @@
       document.getElementById('sidebar-name').textContent = userName;
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
 
-      // Buscar dados do dashboard via RPC
-      const { data: stats, error } = await supabaseClient.rpc('get_dashboard_stats', { p_user_id: currentUser.id });
-
-      if (error) {
-        console.error('Erro ao carregar dashboard:', error);
-        // Fallback: buscar dados diretamente
-        await loadDashboardFallback();
-        return;
-      }
-
-      renderDashboard(stats);
+      // Carregar dados do dashboard diretamente
+      await loadDashboardData();
     }
 
-    async function loadDashboardFallback() {
-      // Buscar assinatura
+    async function loadDashboardData() {
+      // Buscar o plano Free diretamente da tabela plans (para ter os limites corretos)
+      const { data: freePlan } = await supabaseClient
+        .from('plans')
+        .select('*')
+        .eq('name', 'free')
+        .single();
+
+      // Buscar assinatura ativa do usuário
       const { data: sub } = await supabaseClient
         .from('subscriptions')
         .select('*, plans(*)')
@@ -259,12 +257,27 @@
         .limit(1)
         .single();
 
-      // Buscar contagens
+      // Determinar o plano: se tem assinatura, usa o plano da assinatura; senão, usa o Free
+      let plan = sub?.plans || freePlan;
+      let planName = plan?.name || 'free';
+      let monthlyLimit = plan?.monthly_searches || 5;
+
+      // Contar buscas do mês atual
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { count: monthlySearches } = await supabaseClient
+        .from('searches')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id)
+        .gte('created_at', firstDayOfMonth);
+
+      // Contar total de buscas (desde o início)
       const { count: totalSearches } = await supabaseClient
         .from('searches')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', currentUser.id);
 
+      // Contar total de resultados
       const { count: totalResults } = await supabaseClient
         .from('results')
         .select('*', { count: 'exact', head: true })
@@ -278,65 +291,41 @@
         .order('created_at', { ascending: false })
         .limit(5);
 
-      const plan = sub?.plans;
-      const monthlyLimit = plan?.monthly_searches || 3;
-      const used = sub?.searches_used || 0;
+      const used = monthlySearches || 0;
       const extra = sub?.extra_searches_purchased || 0;
-      const remaining = monthlyLimit + extra - used;
+      const totalAvailable = monthlyLimit + extra;
+      const remaining = Math.max(0, totalAvailable - used);
 
-      const stats = {
-        subscription: {
-          plan: plan?.name || 'free',
-          monthly_limit: monthlyLimit,
-          searches_used: used,
-          extra_purchased: extra,
-          remaining: remaining,
-          period_start: sub?.current_period_start,
-          period_end: sub?.current_period_end
-        },
-        total_searches: totalSearches || 0,
-        total_results: totalResults || 0,
-        recent_searches: recentSearches || []
-      };
-
-      renderDashboard(stats);
-    }
-
-    function renderDashboard(stats) {
-      const sub = stats.subscription;
-      const planName = sub.plan || 'free';
+      // Preços corretos dos planos
       const displayNames = { free: 'Free', starter: 'Starter', professional: 'Professional' };
-      const prices = { free: 'Gratuito', starter: 'R$ 49,90/mês', professional: 'R$ 149,90/mês' };
+      const prices = { free: 'Gratuito', starter: 'R$ 44,90/mês', professional: 'R$ 152,90/mês' };
 
-      // Plano
+      // Renderizar plano
       document.getElementById('stat-plan').textContent = displayNames[planName] || planName;
       document.getElementById('stat-plan-price').textContent = prices[planName] || '';
-      document.getElementById('sidebar-plan').textContent = `Plano ${displayNames[planName]}`;
+      document.getElementById('sidebar-plan').textContent = `Plano ${displayNames[planName] || planName}`;
 
-      // Buscas restantes
-      const remaining = Math.max(0, sub.remaining || 0);
-      const total = (sub.monthly_limit || 3) + (sub.extra_purchased || 0);
-      const used = sub.searches_used || 0;
+      // Renderizar buscas restantes
       document.getElementById('stat-remaining').textContent = remaining;
-      document.getElementById('stat-usage-text').textContent = `${used} de ${total} utilizadas`;
+      document.getElementById('stat-usage-text').textContent = `${used} de ${totalAvailable} utilizadas`;
 
       // Barra de progresso
-      const pct = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+      const pct = totalAvailable > 0 ? Math.min((used / totalAvailable) * 100, 100) : 0;
       const bar = document.getElementById('usage-bar');
       bar.style.width = pct + '%';
       if (pct > 80) bar.className = 'progress-bar bg-red-500 h-2 rounded-full';
       else if (pct > 50) bar.className = 'progress-bar bg-yellow-500 h-2 rounded-full';
 
       // Totais
-      document.getElementById('stat-total-searches').textContent = stats.total_searches || 0;
-      document.getElementById('stat-total-results').textContent = stats.total_results || 0;
+      document.getElementById('stat-total-searches').textContent = totalSearches || 0;
+      document.getElementById('stat-total-results').textContent = totalResults || 0;
 
       // Período
-      document.getElementById('period-start').textContent = Utils.formatDate(sub.period_start);
-      document.getElementById('period-end').textContent = Utils.formatDate(sub.period_end);
+      document.getElementById('period-start').textContent = Utils.formatDate(sub?.current_period_start);
+      document.getElementById('period-end').textContent = Utils.formatDate(sub?.current_period_end);
 
       // Buscas recentes
-      const searches = stats.recent_searches || [];
+      const searches = recentSearches || [];
       const container = document.getElementById('recent-searches');
 
       if (searches.length === 0) return;
