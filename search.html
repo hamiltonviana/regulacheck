@@ -263,41 +263,49 @@
       document.getElementById('sidebar-name').textContent = userName;
       document.getElementById('sidebar-avatar').textContent = userName.charAt(0).toUpperCase();
 
-      // Verificar quota
-      const { data: limitInfo } = await supabaseClient.rpc('check_search_limit', { p_user_id: currentUser.id });
+      // Buscar plano Free da tabela plans (fallback)
+      const { data: freePlan } = await supabaseClient
+        .from('plans')
+        .select('*')
+        .eq('name', 'free')
+        .single();
 
-      if (limitInfo) {
-        const remaining = limitInfo.remaining || 0;
-        document.getElementById('quota-remaining').textContent = remaining;
-        document.getElementById('sidebar-plan').textContent = `Plano ${limitInfo.plan || 'Free'}`;
+      // Buscar assinatura ativa do usuário
+      const { data: sub } = await supabaseClient
+        .from('subscriptions')
+        .select('*, plans(*)')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-        if (remaining <= 0) {
-          document.getElementById('search-quota').classList.add('hidden');
-          document.getElementById('no-quota-alert').classList.remove('hidden');
-          document.getElementById('btn-search').disabled = true;
-        }
-      } else {
-        // Fallback
-        const { data: sub } = await supabaseClient
-          .from('subscriptions')
-          .select('*, plans(*)')
-          .eq('user_id', currentUser.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+      // Determinar plano: se tem assinatura usa o plano dela, senão usa Free
+      const plan = sub?.plans || freePlan;
+      const planName = plan?.display_name || 'Free';
+      const monthlyLimit = plan?.monthly_searches || 5;
 
-        if (sub) {
-          const remaining = (sub.plans?.monthly_searches || 3) + (sub.extra_searches_purchased || 0) - (sub.searches_used || 0);
-          document.getElementById('quota-remaining').textContent = Math.max(0, remaining);
-          document.getElementById('sidebar-plan').textContent = `Plano ${sub.plans?.display_name || 'Free'}`;
+      // Contar buscas do mês atual
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { count: monthlySearches } = await supabaseClient
+        .from('searches')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id)
+        .gte('created_at', firstDayOfMonth);
 
-          if (remaining <= 0) {
-            document.getElementById('search-quota').classList.add('hidden');
-            document.getElementById('no-quota-alert').classList.remove('hidden');
-            document.getElementById('btn-search').disabled = true;
-          }
-        }
+      const used = monthlySearches || 0;
+      const extra = sub?.extra_searches_purchased || 0;
+      const totalAvailable = monthlyLimit + extra;
+      const remaining = Math.max(0, totalAvailable - used);
+
+      document.getElementById('quota-remaining').textContent = remaining;
+      document.getElementById('sidebar-plan').textContent = `Plano ${planName}`;
+
+      if (remaining <= 0) {
+        document.getElementById('search-quota').classList.add('hidden');
+        document.getElementById('no-quota-alert').classList.remove('hidden');
+        document.getElementById('btn-search').disabled = true;
       }
 
       setDefaultDates();
