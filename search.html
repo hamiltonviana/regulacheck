@@ -400,17 +400,46 @@
       btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Processando...';
 
       try {
-        // Incrementar contador de buscas
-        const { data: incResult } = await supabaseClient.rpc('increment_search_count', { p_user_id: currentUser.id });
+        // Verificar quota de buscas diretamente
+        const { data: sub } = await supabaseClient
+          .from('subscriptions')
+          .select('*, plans(*)')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-        if (incResult && !incResult.success) {
-          Utils.showToast(incResult.error || 'Limite de buscas atingido.', 'error');
+        const { data: freePlan } = await supabaseClient
+          .from('plans')
+          .select('*')
+          .eq('name', 'free')
+          .single();
+
+        const plan = sub?.plans || freePlan;
+        const monthlyLimit = plan?.monthly_searches || 5;
+
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const { count: monthlySearches } = await supabaseClient
+          .from('searches')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', currentUser.id)
+          .gte('created_at', firstDayOfMonth);
+
+        const used = monthlySearches || 0;
+        const extra = sub?.extra_searches_purchased || 0;
+        const totalAvailable = monthlyLimit + extra;
+        const remaining = Math.max(0, totalAvailable - used);
+
+        if (remaining <= 0) {
+          Utils.showToast('Limite de buscas atingido. Faça upgrade do seu plano.', 'error');
           btn.disabled = false;
           btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Buscar';
           return;
         }
 
-        const isExtra = incResult?.is_extra_search || false;
+        const isExtra = false;
 
         // 1. Criar registro da busca no Supabase com status 'processing'
         const { data: search, error } = await supabaseClient
