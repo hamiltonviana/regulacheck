@@ -17,6 +17,13 @@
       from { opacity: 0; transform: scale(0.9); }
       to { opacity: 1; transform: scale(1); }
     }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    .search-loading-overlay {
+      backdrop-filter: blur(4px);
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -69,6 +76,24 @@
     </div>
   </aside>
 
+  <!-- Loading Overlay para busca -->
+  <div id="search-loading" class="hidden fixed inset-0 z-[100] search-loading-overlay bg-gray-900/60 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-5 max-w-sm mx-4">
+      <div class="relative">
+        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <div class="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-blue-400 rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+      </div>
+      <div class="text-center">
+        <p class="text-lg font-semibold text-gray-900 mb-1">Buscando regulamentações...</p>
+        <p class="text-sm text-gray-500" id="loading-status">Consultando DOU, Anvisa, ABNT e ISO</p>
+        <p class="text-xs text-gray-400 mt-2">Isso pode levar de 30 a 60 segundos</p>
+      </div>
+      <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+        <div id="loading-bar" class="h-full bg-blue-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Conteúdo principal -->
   <main class="lg:ml-64 min-h-screen">
     <header class="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
@@ -90,7 +115,7 @@
       <div id="search-quota" class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
         <div class="flex items-center gap-3">
           <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span class="text-sm text-blue-700">Você tem <strong id="quota-remaining">—</strong> buscas restantes neste período.</span>
+          <span class="text-sm text-blue-700">Você tem <strong id="quota-remaining">&mdash;</strong> buscas restantes neste período.</span>
         </div>
         <a href="plans.html" class="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap">Upgrade &rarr;</a>
       </div>
@@ -193,6 +218,9 @@
     let currentUser = null;
     let keywords = [];
 
+    // URL do webhook n8n
+    const N8N_WEBHOOK_URL = 'https://teste.hamiltonviana.com.br/webhook/1817290f-a6e3-4dc5-aec8-67e4725419b6';
+
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebar-overlay');
@@ -250,6 +278,39 @@
       thirtyDaysAgo.setDate(today.getDate() - 30);
       document.getElementById('date-end').value = today.toISOString().split('T')[0];
       document.getElementById('date-start').value = thirtyDaysAgo.toISOString().split('T')[0];
+    }
+
+    // Mostrar/esconder loading de busca
+    function showSearchLoading(show) {
+      const overlay = document.getElementById('search-loading');
+      const bar = document.getElementById('loading-bar');
+      if (show) {
+        overlay.classList.remove('hidden');
+        // Animar barra de progresso
+        let progress = 0;
+        const messages = [
+          'Consultando DOU, Anvisa, ABNT e ISO',
+          'Buscando no Diário Oficial da União...',
+          'Consultando base da Anvisa...',
+          'Pesquisando normas ABNT...',
+          'Buscando padrões ISO...',
+          'Consolidando resultados...',
+          'Quase pronto...'
+        ];
+        let msgIndex = 0;
+        window._loadingInterval = setInterval(() => {
+          progress = Math.min(progress + Math.random() * 8 + 2, 92);
+          bar.style.width = progress + '%';
+          if (progress > (msgIndex + 1) * (90 / messages.length) && msgIndex < messages.length - 1) {
+            msgIndex++;
+            document.getElementById('loading-status').textContent = messages[msgIndex];
+          }
+        }, 1500);
+      } else {
+        if (window._loadingInterval) clearInterval(window._loadingInterval);
+        bar.style.width = '100%';
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+      }
     }
 
     async function loadPage() {
@@ -351,7 +412,7 @@
 
         const isExtra = incResult?.is_extra_search || false;
 
-        // Criar registro da busca
+        // 1. Criar registro da busca no Supabase com status 'processing'
         const { data: search, error } = await supabaseClient
           .from('searches')
           .insert({
@@ -360,7 +421,7 @@
             date_start: dateStart,
             date_end: dateEnd,
             sources: sources,
-            status: 'pending',
+            status: 'processing',
             is_extra_search: isExtra
           })
           .select()
@@ -377,21 +438,58 @@
           details: { keywords, date_start: dateStart, date_end: dateEnd, sources, is_extra: isExtra }
         });
 
-        Utils.showToast('Busca criada com sucesso! Redirecionando...', 'success');
+        // 2. Mostrar loading overlay
+        showSearchLoading(true);
 
-        // Simular processamento (em produção, o n8n faria isso)
-        setTimeout(async () => {
-          // Atualizar status para completed (simulação)
+        // 3. Chamar o webhook do n8n com os dados da busca
+        const webhookPayload = {
+          keywords: keywords,
+          date_start: dateStart,
+          date_end: dateEnd,
+          sources: sources,
+          user_id: currentUser.id,
+          search_id: search.id
+        };
+
+        try {
+          const response = await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(webhookPayload)
+          });
+
+          const result = await response.json();
+
+          showSearchLoading(false);
+
+          if (response.ok) {
+            Utils.showToast(`Busca concluída! ${result.count || 0} resultados encontrados.`, 'success');
+          } else {
+            // Webhook retornou erro mas a busca foi criada
+            console.warn('Webhook retornou erro:', result);
+            Utils.showToast(result.mensagem || 'Busca processada com avisos.', 'warning');
+          }
+        } catch (webhookErr) {
+          // Se o webhook falhar, atualizar status para 'failed'
+          console.error('Erro ao chamar webhook:', webhookErr);
+          showSearchLoading(false);
+
           await supabaseClient
             .from('searches')
-            .update({ status: 'completed' })
+            .update({ status: 'failed', error_message: 'Erro ao conectar com o sistema de busca.' })
             .eq('id', search.id);
 
-          window.location.href = `results.html?search_id=${search.id}`;
-        }, 1500);
+          Utils.showToast('Erro ao processar busca. O sistema pode estar temporariamente indisponível.', 'error');
+        }
+
+        // 4. Redirecionar para a página de resultados
+        window.location.href = `results.html?search_id=${search.id}`;
 
       } catch (err) {
         console.error('Erro ao criar busca:', err);
+        showSearchLoading(false);
         Utils.showToast('Erro ao criar busca. Tente novamente.', 'error');
         btn.disabled = false;
         btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Buscar';
